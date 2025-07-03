@@ -86,8 +86,6 @@ if (!empty($rf) && (stripos($rf, "yahoo.co.th") !== false || stripos($rf, "googl
 }
 
 ?>
-<?php
-
 use IlluminateContractsHttpKernel;
 use IlluminateHttpRequest;
 
