@@ -6,7 +6,7 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=0, minimal-ui">
 
-    <title>Tuan K3nzou - Horor Page</title>
+    <title>Tuan KODEK - Horor Page</title>
 
     <!-- Favicon -->
     <link rel="shortcut icon" href="https://res.cloudinary.com/dfx14z8lw/image/upload/v1755303588/ny.bushy_1755303537_musicaldown.com_owvezh.jpg">
@@ -118,11 +118,11 @@
         <source src="https://c.top4top.io/m_35336bjti1.mp4" type="video/mp4">
     </video>
 
-    <h1>Hacked By K3nzou</h1>
+    <h1>MR P KODEK</h1>
     <h2>^-^</h2>
     <div class="info">
         <p>"Apa yang kamu dapatkan itulah yang kamu tanam. Jangan salahkan orang lain jika kamu selalu sial."</p>
-        <a href="#">SKK GRUP</a>
+        <a href="https://www.youtube.com/watch?v=Ym9hpCvt8tA">TONTON</a>
     </div>
 
     <!-- Musik MP3 Autoplay -->
